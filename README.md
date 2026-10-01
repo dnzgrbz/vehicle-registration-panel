@@ -36,9 +36,9 @@ Panel web de registro y gestión de vehículos desarrollado por **Deniz Gürbüz
 
 <a name="עברית"></a>
 ### 🇮🇱 עברית
-לוحة ويب لتسجيل وإدارة المركبات تم تطويرها بواسطة **Deniz Gürbüz** لتتبع دخول وخروج المركبات وسجلات الوزن.
-- **التثبيت والاستخدام:** قم بتنزيل أو استنساخ المستودع، ثم افتح ملف `index.html` في أي متصفح ويب حديث. لا يلزم إعداد خادم.
-- **المطور:** Deniz Gürbüz
+לוحة تحكم ويب لتسجيل وإدارة المركبات تم تطويرها بواسطة **Deniz Gürbüz** لتتبع مداخل ومخارج المركبات وسجلات الوزن.
+- **התקנה ושימוש:** הורד أو شבט את המאREPOSITORY, ואז פתח את הקובץ `index.html` בכל דפדפן אינטרנט מודרני. אין צורך בהגדרת שרת.
+- **מפתח:** Deniz Gürbüz
 
 <a name="العربية"></a>
 ### 🇸🇦 العربية
@@ -79,5 +79,5 @@ Een web-based voertuigregistratie- en beheerpaneel ontwikkeld door **Deniz Gürb
 <a name="português"></a>
 ### 🇵🇹 Português
 Painel de registro e gerenciamento de veículos desenvolvido por **Deniz Gürbüz** para rastrear entradas, saídas e registros de pesagem.
-- **Instalación y Uso:** Baixe ou clone o repositório e abra o arquivo `index.html` em qualquer navegador web moderno.
+- **Instalação e Uso:** Baixe ou clone o repositório e abra o arquivo `index.html` em qualquer navegador web moderno.
 - **Desenvolvedor:** Deniz Gürbüz
