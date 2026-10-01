@@ -1,6 +1,6 @@
 # 🚗 Vehicle Registration & Management Panel
 
-[🇺🇸 English](#english) | [🇹🇷 Türkçe](#türkçe) | [🇩🇪 Deutsch](#deutsch) | [🇫🇷 Français](#français) | [🇪🇸 Español](#español) | [🇮🇹 Italiano](#italiano) | [🇸🇦 العربية](#العربية) | [🇷🇺 Русский](#русский) | [🇨🇳 中文](#中文) | [🇯🇵 日本語](#日本語) | [🇰🇷 한국어](#한국어) | [🇳🇱 Nederlands](#nederlands) | [🇵🇹 Português](#português)
+[🇺🇸 English](#english) | [🇹🇷 Türkçe](#türkçe) | [🇩🇪 Deutsch](#deutsch) | [🇫🇷 Français](#français) | [🇪🇸 Español](#español) | [🇮🇱 עברית](#עברית) | [🇸🇦 العربية](#العربية) | [🇷🇺 Русский](#русский) | [🇨🇳 中文](#中文) | [🇯🇵 日本語](#日本語) | [🇰🇷 한국어](#한국어) | [🇳🇱 Nederlands](#nederlands) | [🇵🇹 Português](#português)
 
 ---
 
@@ -34,11 +34,11 @@ Panel web de registro y gestión de vehículos desarrollado por **Deniz Gürbüz
 - **Instalación y Uso:** Descargue o clone el repositorio y abra `index.html` en cualquier navegador web moderno.
 - **Desarrollador:** Deniz Gürbüz
 
-<a name="italiano"></a>
-### 🇮🇹 Italiano
-Pannello di registrazione e gestione veicoli sviluppato da **Deniz Gürbüz** per tracciare ingressi, uscite e registri di pesatura.
-- **Installazione e Uso:** Scarica o clona il repository, quindi apri `index.html` in un browser web moderno.
-- **Sviluppatore:** Deniz Gürbüz
+<a name="עברית"></a>
+### 🇮🇱 עברית
+לוحة ويب لتسجيل وإدارة المركبات تم تطويرها بواسطة **Deniz Gürbüz** لتتبع دخول وخروج المركبات وسجلات الوزن.
+- **التثبيت والاستخدام:** قم بتنزيل أو استنساخ المستودع، ثم افتح ملف `index.html` في أي متصفح ويب حديث. لا يلزم إعداد خادم.
+- **المطور:** Deniz Gürbüz
 
 <a name="العربية"></a>
 ### 🇸🇦 العربية
@@ -79,5 +79,5 @@ Een web-based voertuigregistratie- en beheerpaneel ontwikkeld door **Deniz Gürb
 <a name="português"></a>
 ### 🇵🇹 Português
 Painel de registro e gerenciamento de veículos desenvolvido por **Deniz Gürbüz** para rastrear entradas, saídas e registros de pesagem.
-- **Instalação e Uso:** Baixe ou clone o repositório e abra o arquivo `index.html` em qualquer navegador web moderno.
+- **Instalación y Uso:** Baixe ou clone o repositório e abra o arquivo `index.html` em qualquer navegador web moderno.
 - **Desenvolvedor:** Deniz Gürbüz
