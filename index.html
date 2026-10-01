@@ -1,0 +1,2316 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Araç Kayıt ve Yönetim Paneli</title>
+    <!-- SheetJS (xlsx) Kütüphanesi -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
+        /* --- TEMEL DEĞİŞKENLER VE VARSAYILAN TEMA --- */
+        :root {
+            --primary: #1e3a8a;
+            --primary-hover: #1e40af;
+            --success: #1e3a8a;
+            --success-hover: #1e40af;
+            --warning: #1e3a8a;
+            --warning-hover: #1e40af;
+            --danger: #dc2626;
+            --danger-hover: #b91c1c;
+            --info: #1e3a8a;
+            --info-hover: #1e40af;
+            --bg-main: #f1f5f9;
+            --text-main: #1e293b;
+            --border-color: #cbd5e1;
+            --card-bg: #ffffff;
+            --panel-header-color: #0f172a;
+            --btn-text: #ffffff;
+            --summary-label-color: #000000;
+            --summary-val-color: #000000;
+        }
+
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            margin: 20px; 
+            background-color: var(--bg-main); 
+            color: var(--text-main); 
+            line-height: 1.5;
+        }
+        
+        /* --- AÇILIŞ DİL VE PARA BİRİMİ SEÇİM EKRANI --- */
+        #setupModal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.85);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            backdrop-filter: blur(5px);
+        }
+        .setup-card {
+            background: var(--card-bg);
+            padding: 35px;
+            border-radius: 14px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+            max-width: 450px;
+            width: 90%;
+            text-align: center;
+            border: 1px solid var(--border-color);
+        }
+        .setup-card h2 {
+            margin-top: 0;
+            color: var(--panel-header-color);
+            font-size: 22px;
+            margin-bottom: 15px;
+        }
+        .setup-card p {
+            font-size: 14px;
+            color: var(--text-main);
+            opacity: 0.85;
+            margin-bottom: 20px;
+        }
+        .setup-card select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 15px;
+            margin-bottom: 20px;
+            background-color: var(--card-bg);
+            color: var(--text-main);
+            outline: none;
+        }
+        .setup-card select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.15);
+        }
+        .setup-btn {
+            background-color: var(--primary);
+            color: var(--btn-text);
+            border: none;
+            padding: 12px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 15px;
+            width: 100%;
+            transition: background 0.2s;
+        }
+        .setup-btn:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .admin-panel { 
+            background: var(--card-bg); 
+            padding: 25px; 
+            border-radius: 12px; 
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.05); 
+            max-width: 1100px; 
+            margin: 0 auto 30px auto; 
+            border: 1px solid var(--border-color);
+        }
+        
+        .panel-baslik-alani {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 3px solid var(--primary);
+            padding-bottom: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+            position: relative;
+        }
+
+        .admin-panel h2 { 
+            margin: 0; 
+            color: var(--panel-header-color); 
+            font-size: 22px;
+        }
+
+        .dropdown-menu-container {
+            position: relative;
+            display: inline-block;
+        }
+
+        .dropdown-main-btn {
+            background-color: var(--card-bg);
+            color: var(--text-main);
+            padding: 8px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .dropdown-main-btn:hover {
+            opacity: 0.85;
+            border-color: var(--primary);
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            right: 0;
+            background-color: var(--card-bg);
+            min-width: 190px;
+            max-height: 300px;
+            overflow-y: auto;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.15);
+            z-index: 100;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            margin-top: 5px;
+        }
+
+        .dropdown-content button {
+            color: var(--text-main);
+            padding: 10px 14px;
+            text-align: left;
+            background: none;
+            border: none;
+            width: 100%;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            display: block;
+            transition: background 0.15s;
+        }
+
+        .dropdown-content button:hover {
+            background-color: var(--border-color);
+            opacity: 0.9;
+        }
+
+        .dropdown-menu-container.active .dropdown-content {
+            display: block;
+        }
+        
+        .form-row { 
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px; 
+            margin-bottom: 20px; 
+            align-items: flex-end; 
+        }
+        
+        .form-group { display: flex; flex-direction: column; }
+        .form-group label { font-weight: 600; margin-bottom: 6px; font-size: 14px; color: var(--text-main); opacity: 0.9; }
+        
+        .form-group input, .form-group select { 
+            width: 100%; 
+            padding: 10px; 
+            border: 1px solid var(--border-color); 
+            border-radius: 6px; 
+            box-sizing: border-box; 
+            font-size: 14px;
+            background-color: var(--card-bg);
+            color: var(--text-main);
+        }
+        
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.15);
+        }
+
+        .form-group input[readonly], .form-group input:disabled {
+            background-color: var(--border-color);
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+        
+        .btn { 
+            padding: 10px 20px; 
+            border: none; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            font-weight: 600; 
+            font-size: 14px; 
+            height: 42px; 
+            display: inline-flex; 
+            align-items: center; 
+            justify-content: center; 
+            transition: background-color 0.2s, transform 0.1s;
+        }
+        .btn:active { transform: scale(0.98); }
+        
+        .btn-add, .btn-undo { background-color: var(--primary); color: var(--btn-text); width: 100%; }
+        .btn-add:hover, .btn-undo:hover { background-color: var(--primary-hover); }
+        
+        .action-buttons { display: flex; flex-wrap: wrap; gap: 15px; margin-top: 20px; }
+        
+        .btn-print { background-color: var(--primary); color: var(--btn-text); flex: 2; min-width: 180px; }
+        .btn-print:hover { background-color: var(--primary-hover); }
+
+        .btn-excel { background-color: var(--primary); color: var(--btn-text); flex: 2; min-width: 180px; }
+        .btn-excel:hover { background-color: var(--primary-hover); }
+
+        .btn-import { background-color: var(--primary); color: var(--btn-text); flex: 2; min-width: 180px; }
+        .btn-import:hover { background-color: var(--primary-hover); }
+
+        .btn-reset-all { background-color: var(--danger); color: var(--btn-text); flex: 1; min-width: 150px; }
+        .btn-reset-all:hover { background-color: var(--danger-hover); }
+        
+        .search-container { 
+            background: var(--card-bg); 
+            border: 1px solid var(--border-color); 
+            padding: 15px; 
+            border-radius: 8px; 
+            margin-bottom: 20px; 
+            display: flex; 
+            flex-direction: column;
+            gap: 8px; 
+        }
+        .search-container label { font-weight: 600; font-size: 14px; color: var(--text-main); opacity: 0.9; }
+        .search-container input { padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 14px; background-color: var(--card-bg); color: var(--text-main); }
+        .search-container input:focus { outline: none; border-color: var(--primary); }
+        
+        .summary-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 13px;
+        }
+        .summary-table td {
+            padding: 10px 10px;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-main);
+            vertical-align: middle;
+        }
+        .summary-table td.label-col, .summary-table td.val-col {
+            font-weight: 600;
+            width: 25%;
+            color: var(--summary-label-color);
+        }
+        
+        .imza-alani {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 45px;
+            padding: 0 20px;
+        }
+        .imza-kutu {
+            text-align: center;
+            font-weight: 700;
+            font-size: 13px;
+            width: 220px;
+            padding-top: 8px;
+            color: var(--text-main);
+            line-height: 1.5;
+        }
+        
+        .tutanak-sayfa { 
+            width: 210mm; 
+            height: 296mm; 
+            padding: 20mm 15mm 25mm 15mm; 
+            margin: 30px auto; 
+            background: var(--card-bg); 
+            border: 1px solid var(--border-color); 
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            box-sizing: border-box; 
+            page-break-after: always; 
+            position: relative; 
+            color: var(--text-main);
+        }
+        .temiz-tarih { text-align: right; font-size: 13px; font-weight: 600; margin-bottom: 10px; color: var(--text-main); opacity: 0.8; }
+        .tutanak-baslik { text-align: center; font-size: 16px; font-weight: 700; margin-bottom: 20px; text-transform: uppercase; color: var(--panel-header-color); letter-spacing: 0.5px; }
+        
+        .list-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .list-table th { border: 1px solid var(--border-color); padding: 8px 6px; font-size: 11px; text-align: center; background-color: var(--bg-main); color: var(--text-main); }
+        .list-table td { border: 1px solid var(--border-color); padding: 6px 6px; font-size: 11px; text-align: center; color: var(--text-main); }
+        .table-total-row { background-color: var(--bg-main); font-weight: bold; font-size: 12px; color: var(--text-main); }
+        
+        .btn-delete { background-color: var(--danger); color: var(--btn-text); border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600; }
+        .btn-delete:hover { background-color: var(--danger-hover); }
+        
+        .sayfa-footer {
+            position: absolute;
+            bottom: 15mm;
+            left: 15mm;
+            right: 15mm;
+            text-align: center;
+            font-size: 11px;
+            color: var(--text-main);
+            opacity: 0.7;
+            border-top: 1px solid var(--border-color);
+            padding-top: 8px;
+            line-height: 1.4;
+        }
+        .sayfa-footer .vurgulu-isim {
+            color: var(--text-main);
+            font-weight: 700;
+        }
+
+        .empty-state { text-align: center; padding: 50px 20px; color: var(--text-main); opacity: 0.8; font-style: italic; max-width: 1100px; margin: 0 auto; background: var(--card-bg); border-radius: 12px; border: 2px dashed var(--border-color); }
+        
+        .panel-imza {
+            text-align: center;
+            margin-top: 35px;
+            font-size: 12px;
+            color: var(--text-main);
+            opacity: 0.8;
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+            font-weight: 500;
+            line-height: 1.6;
+        }
+        .panel-imza strong { color: var(--primary); font-weight: 600; }
+        .panel-imza .geliştirici { font-size: 11px; opacity: 0.7; margin-top: 3px; }
+        .panel-imza .vurgulu-isim { color: var(--text-main); font-weight: 700; }
+
+        @media (max-width: 768px) {
+            body { margin: 10px; }
+            .action-buttons { flex-direction: column; }
+            .btn { width: 100%; }
+            .tutanak-sayfa { width: 100%; height: auto; padding: 15px; margin: 15px 0; overflow-x: auto; padding-bottom: 25px; }
+            .sayfa-footer { position: relative; bottom: auto; left: auto; right: auto; margin-top: 20px; }
+            .list-table { min-width: 600px; }
+        }
+
+        @media print {
+            @page { size: A4; margin: 0; }
+            :root {
+                --bg-main: #ffffff !important;
+                --text-main: #000000 !important;
+                --card-bg: #ffffff !important;
+                --border-color: #94a3b8 !important;
+                --primary: #000000 !important;
+                --panel-header-color: #000000 !important;
+                --summary-label-color: #000000 !important;
+                --summary-val-color: #000000 !important;
+            }
+            html, body { background: #fff !important; color: #000 !important; margin: 0 !important; padding: 0 !important; width: 210mm; height: 297mm; }
+            .admin-panel, .empty-state, .search-container, .dropdown-menu-container, #setupModal { display: none !important; }
+            .tutanak-sayfa { border: none !important; box-shadow: none !important; margin: 0 !important; padding: 20mm 15mm 25mm 15mm !important; width: 210mm !important; height: 297mm !important; page-break-after: always; box-sizing: border-box; display: block !important; position: relative; background: #ffffff !important; color: #000000 !important; }
+            .col-action, .cell-action { display: none !important; }
+            .list-table th, .list-table td { background-color: transparent !important; color: #000000 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .sayfa-footer { position: absolute; bottom: 15mm; left: 15mm; right: 15mm; color: #000000 !important; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- İLK AÇILIŞ DİL VE PARA BİRİMİ SEÇİM MODALI -->
+<div id="setupModal" style="display: none;">
+    <div class="setup-card">
+        <h2 id="modalTitle">Language and Currency Selection</h2>
+        <p id="modalDesc">Please select your preferred language. The currency will be set automatically based on your language choice.</p>
+        <select id="modalLangSelect" onchange="modalDilDegisti(this.value)">
+            <option value="en" data-currency="$" selected>🇬🇧 English ($)</option>
+            <option value="tr" data-currency="₺">🇹🇷 Türkçe (₺)</option>
+            <option value="he" data-currency="₪">🇮🇱 עברית (₪)</option>
+            <option value="ru" data-currency="₽">🇷🇺 Русский (₽)</option>
+            <option value="zh" data-currency="¥">🇨🇳 中文 (¥)</option>
+            <option value="es" data-currency="€">🇪🇸 Español (€)</option>
+            <option value="nl" data-currency="€">🇳🇱 Nederlands (€)</option>
+            <option value="ko" data-currency="₩">🇰🇷 한국어 (₩)</option>
+            <option value="ja" data-currency="¥">🇯🇵 日本語 (¥)</option>
+            <option value="hi" data-currency="₹">🇮🇳 हिन्दी (₹)</option>
+            <option value="de" data-currency="€">🇩🇪 Deutsch (€)</option>
+            <option value="fr" data-currency="€">🇫🇷 Français (€)</option>
+            <option value="ar" data-currency="د.إ">🇸🇦 العربية (د.إ)</option>
+        </select>
+        <button class="setup-btn" id="modalBtnConfirm" onclick="ilkKurulumuTamamla()">Continue</button>
+    </div>
+</div>
+
+<!-- UYGULAMA ANA İÇERİĞİ -->
+<div id="appContainer">
+    <div class="admin-panel">
+        <div class="panel-baslik-alani">
+            <h2 id="lblTitle">Vehicle Registration & Management Panel</h2>
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                
+                <!-- DİL SEÇME MENÜSÜ -->
+                <div class="dropdown-menu-container" id="langDropdown">
+                    <button class="dropdown-main-btn" onclick="toggleLangMenu()" id="langBtnText">
+                        🌐 English ($) <span style="font-size: 10px;">▼</span>
+                    </button>
+                    <div class="dropdown-content">
+                        <button onclick="setLanguage('en', 'English')">🇬🇧 English</button>
+                        <button onclick="setLanguage('tr', 'Türkçe')">🇹🇷 Türkçe</button>
+                        <button onclick="setLanguage('he', 'עברית')">🇮🇱 עברית</button>
+                        <button onclick="setLanguage('ru', 'Русский')">🇷🇺 Русский</button>
+                        <button onclick="setLanguage('zh', '中文')">🇨🇳 中文</button>
+                        <button onclick="setLanguage('es', 'Español')">🇪🇸 Español</button>
+                        <button onclick="setLanguage('nl', 'Nederlands')">🇳🇱 Nederlands</button>
+                        <button onclick="setLanguage('ko', '한국어')">🇰🇷 한국어</button>
+                        <button onclick="setLanguage('ja', '日本語')">🇯🇵 日本語</button>
+                        <button onclick="setLanguage('hi', 'हिन्दी')">🇮🇳 हिन्दी</button>
+                        <button onclick="setLanguage('de', 'Deutsch')">🇩🇪 Deutsch</button>
+                        <button onclick="setLanguage('fr', 'Français')">🇫🇷 Français</button>
+                        <button onclick="setLanguage('ar', 'العربية')">🇸🇦 العربية</button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-group" style="max-width: 100px;">
+                <label id="lblSira">No:</label>
+                <input type="number" id="inpSiraNo" value="1" readonly>
+            </div>
+            <div class="form-group">
+                <label id="lblTarihSec">Select Date:</label>
+                <input type="date" id="inpTarih">
+            </div>
+            <div class="form-group">
+                <label id="lblPersonel">Staff Member:</label>
+                <input type="text" id="inpPersonel" placeholder="">
+            </div>
+            <div class="form-group">
+                <label id="lblVardiya">Working Hours:</label>
+                <input type="text" id="inpVardiya" placeholder="">
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label id="lblPlaka">License Plate:</label>
+                <input type="text" id="inpPlaka" list="plakaHavuzuOnerileri" placeholder="" oninput="plakaInputYazildi(this.value)">
+                <datalist id="plakaHavuzuOnerileri">
+                    <!-- Dinamik olarak sadece yazıldıkça ve en fazla 5 adet dolacak -->
+                </datalist>
+            </div>
+            <div class="form-group">
+                <label id="lblAracTipi">Vehicle Type:</label>
+                <select id="inpAracTipi">
+                    <option value="Tır" id="optTir">Semi-Truck</option>
+                    <option value="Kırkayak" id="optKirkayak">Multi-Axle Truck</option>
+                    <option value="On teker" id="optOnTeker">10-Wheeler</option>
+                    <option value="Diğer" id="optDiger">Other</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label id="lblYon">Direction (In/Out):</label>
+                <select id="inpYon">
+                    <option value="Giriş" id="optGiris">Entry</option>
+                    <option value="Çıkış" id="optCikis" selected>Exit</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label id="lblYukTipi">Cargo Type:</label>
+                <select id="inpYukTipi" onchange="yukTipiDegisti()">
+                    <option value="Normal Yük" id="optNormalYuk">Normal Cargo</option>
+                    <option value="Çift Yükleme" id="optCiftYuk">Double Load</option>
+                    <option value="Belirtiniz" id="optBelirtiniz">Specify (Manual)</option>
+                </select>
+            </div>
+            <div class="form-group" id="grpOzelYuk" style="display: none;">
+                <label id="lblYukDetay">Cargo Detail:</label>
+                <input type="text" id="inpOzelYuk" placeholder="Ex: 3 Loads">
+            </div>
+            <div class="form-group">
+                <label id="lblUcretTur">Payment Type:</label>
+                <select id="inpUcretTur" onchange="ucretTuruDegisti()">
+                    <option value="Nakit" id="optNakit" selected>Cash</option>
+                    <option value="Kredi Kartı" id="optKrediKarti">Credit Card</option>
+                    <option value="Ücretsiz" id="optUcretsiz">Free</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label id="lblTutarGir">Enter Amount:</label>
+                <input type="number" id="inpUcretTutar" placeholder="" min="0" oninput="if(parseFloat(this.value) < 0) this.value = ''; ucretDegisti(this.value);">
+            </div>
+            <div class="form-group">
+                <label>&nbsp;</label>
+                <button class="btn btn-add" id="btnAddList" onclick="aracEkle()">Add to List</button>
+            </div>
+            <div class="form-group">
+                <label>&nbsp;</label>
+                <button class="btn btn-undo" id="btnUndo" onclick="sonIslemiGeriAl()">Undo Last Action</button>
+            </div>
+        </div>
+
+        <!-- PLAKA HAVUZU YÖNETİM ALANI -->
+        <div style="background: var(--bg-main); padding: 12px 15px; border-radius: 8px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; border: 1px solid var(--border-color);">
+            <div>
+                <strong id="lblHavuzTitle">🚗 Plate Pool Management</strong>
+                <div style="font-size: 12px; opacity: 0.8; margin-top: 2px;"><span id="lblHavuzDesc1">There are</span> <span id="lblHavuzSayisi" style="font-weight:bold;">0</span> <span id="lblHavuzDesc2">plates ready in the pool.</span></div>
+            </div>
+            <div style="display: flex; gap: 8px;">
+                <button class="btn btn-info" id="btnExportPool" style="height: 36px; font-size: 13px;" onclick="plakaHavuzunuDisariAktar()">📥 Download Pool CSV</button>
+                <input type="file" id="csvPlakaFileInput" accept=".csv" style="display: none;" onchange="plakaHavuzunuYukle(event)">
+                <button class="btn btn-success" id="btnImportPool" style="height: 36px; font-size: 13px;" onclick="document.getElementById('csvPlakaFileInput').click()">📤 Upload Pool CSV</button>
+            </div>
+        </div>
+
+        <div class="search-container">
+            <label for="inpSearch" id="lblSearchLabel">Search Plate in List:</label>
+            <input type="text" id="inpSearch" placeholder="" oninput="tutanakCiz()">
+        </div>
+
+        <div class="action-buttons">
+            <button class="btn btn-print" id="btnPrint" onclick="window.print()">Print Report (A4)</button>
+            <button class="btn btn-excel" id="btnExcel" onclick="csvDisariAktar()">Download CSV (.csv)</button>
+            <input type="file" id="csvFileInput" accept=".csv" style="display: none;" onchange="csvYukle(event)">
+            <button class="btn btn-import" id="btnImportCsv" onclick="document.getElementById('csvFileInput').click()">Upload CSV (.csv)</button>
+            <button class="btn btn-reset-all" id="btnResetAll" onclick="listeyiKompleTemizle()">Clear List</button>
+        </div>
+
+        <div class="panel-imza" id="lblPanelImza">
+            Developer & License Owner: <span class="vurgulu-isim">Deniz GÜRBÜZ</span> | All Rights Reserved.
+        </div>
+    </div>
+
+    <div id="tutanakGenelAlan"></div>
+</div>
+
+<script>
+    // --- ÇOKLU DİL SÖZLÜĞÜ VE PARA BİRİMİ EŞLEŞMELERİ ---
+    const dilSozlugu = {
+        tr: {
+            title: "Araç Kayıt ve Yönetim Paneli",
+            sira: "Sıra:",
+            tarihSec: "Tarih Seçin:",
+            personel: "Görevli Personel:",
+            vardiya: "Çalışma Saatleri:",
+            plaka: "Araç Plakası:",
+            aracTipi: "Araç Tipi:",
+            tir: "Tır",
+            kirkayak: "Kırkayak",
+            onteker: "On teker",
+            diger: "Diğer",
+            yon: "Yönü (Giriş/Çıkış):",
+            giris: "Giriş",
+            cikis: "Çıkış",
+            yukTipi: "Yük Tipi (Çoklu Yük):",
+            normalYuk: "Normal Yük",
+            ciftYuk: "Çift Yükleme",
+            belirtiniz: "Belirtiniz (Manuel)",
+            yukDetay: "Yük Detayı:",
+            ucretTur: "Ücret Ödeme Türü:",
+            nakit: "Nakit",
+            krediKarti: "Kredi Kartı",
+            ucretsiz: "Ücretsiz",
+            tutarGir: "Tutarı giriniz:",
+            addList: "Listeye Ekle",
+            undo: "Son İşlemi Geri Al",
+            havuzTitle: "🚗 Plaka Havuzu Yönetimi",
+            havuzDesc1: "Havuzda kayıtlı",
+            havuzDesc2: "adet plaka öneri için hazır.",
+            exportPool: "📥 Havuzu CSV İndir",
+            importPool: "📤 Havuz CSV Yükle",
+            searchLabel: "Listede Plaka Ara:",
+            print: "Tutanağı Yazdır (A4)",
+            excel: "CSV İndir (.csv)",
+            importCsv: "CSV Yükle (.csv)",
+            resetAll: "Listeyi Temizle",
+            emptyState: "Henüz araç kaydı girilmedi. Üstteki panelden araç eklediğinizde A4 tutanak önizlemesi burada açılacaktır.",
+            reportTitle: "ARAÇ GİRİŞ - ÇIKIŞ VE ÜCRET ÖZET RAPORU",
+            totalArac: "Toplam Araç Sayısı:",
+            totalUcret: "Toplam Ücret Tutarı:",
+            nakitArac: "Nakit Ödeyen Araç:",
+            nakitUcret: "Nakit Ücret Tutarı:",
+            krediArac: "Kredi Kartıyla Ödeyen:",
+            krediTutar: "Kredi Kartı Tutarı:",
+            ucretsizArac: "Ücretsiz Araç Sayısı:",
+            girisArac: "Giriş Yapan Araç:",
+            cikisArac: "Çıkış Yapan Araç:",
+            cokluYukArac: "Çoklu Yüklenen Araç:",
+            cokluYukPlaka: "Çoklu Yük Plakaları:",
+            teslimEden: "TESLİM EDEN",
+            teslimAlan: "TESLİM ALAN",
+            vardiyaLabel: "Çalışma Vardiyası:",
+            girisDetay: "ARAÇ GİRİŞ DETAY LİSTESİ",
+            cikisDetay: "ARAÇ ÇIKIŞ DETAY LİSTESİ",
+            sNo: "S.No",
+            tarih: "Tarih",
+            islem: "İşlem",
+            sil: "Sil",
+            pageTotal: "BU SAYFA TOPLAM TUTARI:",
+            searchNotFound: "Aradığınız kritere ait kayıt bulunamadı.",
+            adet: "Adet",
+            belirtilmedi: "Belirtilmedi",
+            kayitYok: "Kayıt yok.",
+            girilmedi: "GİRİLMEDİ",
+            ciftYuklemeMetin: "Çift Yükleme",
+            imzaText: 'Geliştirici & Lisans Sahibi: <span class="vurgulu-isim">Deniz GÜRBÜZ</span> | Tüm Hakları Saklıdır.',
+            csvFileName: "arac_kayitlari.csv",
+            poolCsvFileName: "plaka_havuzu_yedek.csv",
+            csvHeaders: ["Tarih", "Plaka", "Arac Tipi", "Yon", "Yuk Tipi", "Ucret Turu", "Ucret"],
+            currency: "₺",
+            langName: "Türkçe",
+            modalTitleText: "Dil ve Para Birimi Seçimi",
+            modalDescText: "Lütfen kullanmak istediğiniz dili seçin. Para birimi seçtiğiniz dile göre otomatik ayarlanacaktır.",
+            modalBtnText: "Devam Et"
+        },
+        en: {
+            title: "Vehicle Registration & Management Panel",
+            sira: "No:",
+            tarihSec: "Select Date:",
+            personel: "Staff Member:",
+            vardiya: "Working Hours:",
+            plaka: "License Plate:",
+            aracTipi: "Vehicle Type:",
+            tir: "Semi-Truck",
+            kirkayak: "Multi-Axle Truck",
+            onteker: "10-Wheeler",
+            diger: "Other",
+            yon: "Direction (In/Out):",
+            giris: "Entry",
+            cikis: "Exit",
+            yukTipi: "Cargo Type:",
+            normalYuk: "Normal Cargo",
+            ciftYuk: "Double Load",
+            belirtiniz: "Specify (Manual)",
+            yukDetay: "Cargo Detail:",
+            ucretTur: "Payment Type:",
+            nakit: "Cash",
+            krediKarti: "Credit Card",
+            ucretsiz: "Free",
+            tutarGir: "Enter Amount:",
+            addList: "Add to List",
+            undo: "Undo Last Action",
+            havuzTitle: "🚗 Plate Pool Management",
+            havuzDesc1: "There are",
+            havuzDesc2: "plates ready in the pool.",
+            exportPool: "📥 Download Pool CSV",
+            importPool: "📤 Upload Pool CSV",
+            searchLabel: "Search Plate in List:",
+            print: "Print Report (A4)",
+            excel: "Download CSV (.csv)",
+            importCsv: "Upload CSV (.csv)",
+            resetAll: "Clear List",
+            emptyState: "No vehicle records added yet. A4 report preview will appear here once added.",
+            reportTitle: "VEHICLE ENTRY - EXIT & FEE SUMMARY REPORT",
+            totalArac: "Total Vehicles:",
+            totalUcret: "Total Fee Amount:",
+            nakitArac: "Cash Paying Vehicles:",
+            nakitUcret: "Cash Fee Amount:",
+            krediArac: "Credit Card Vehicles:",
+            krediTutar: "Credit Card Amount:",
+            ucretsizArac: "Free Vehicles:",
+            girisArac: "Incoming Vehicles:",
+            cikisArac: "Outgoing Vehicles:",
+            cokluYukArac: "Multi-Cargo Vehicles:",
+            cokluYukPlaka: "Multi-Cargo Plates:",
+            teslimEden: "HANDED OVER BY",
+            teslimAlan: "RECEIVED BY",
+            vardiyaLabel: "Shift:",
+            girisDetay: "VEHICLE ENTRY DETAIL LIST",
+            cikisDetay: "VEHICLE EXIT DETAIL LIST",
+            sNo: "No",
+            tarih: "Date",
+            islem: "Action",
+            sil: "Delete",
+            pageTotal: "THIS PAGE TOTAL AMOUNT:",
+            searchNotFound: "No records found matching your search.",
+            adet: "Units",
+            belirtilmedi: "Not specified",
+            kayitYok: "No records.",
+            girilmedi: "NOT ENTERED",
+            ciftYuklemeMetin: "Double Load",
+            imzaText: 'Developer & License Owner: <span class="vurgulu-isim">Deniz GÜRBÜZ</span> | All Rights Reserved.',
+            csvFileName: "vehicle_records.csv",
+            poolCsvFileName: "plate_pool_backup.csv",
+            csvHeaders: ["Date", "Plate", "Vehicle Type", "Direction", "Cargo Type", "Payment Type", "Amount"],
+            currency: "$",
+            langName: "English",
+            modalTitleText: "Language & Currency Selection",
+            modalDescText: "Please select your preferred language. The currency will be set automatically based on your language choice.",
+            modalBtnText: "Continue"
+        },
+        he: {
+            title: "לוח בקרה ורישום כלי רכב",
+            sira: "מס':",
+            tarihSec: "בחר תאריך:",
+            personel: "איש צוות:",
+            vardiya: "שעות עבודה:",
+            plaka: "מספר רישוי:",
+            aracTipi: "סוג רכב:",
+            tir: "משאית סמי-טריילר",
+            kirkayak: "משאית רב-סרנים",
+            onteker: "10 גלגלים",
+            diger: "אחר",
+            yon: "כיוון (כניסה/יציאה):",
+            giris: "כניסה",
+            cikis: "יציאה",
+            yukTipi: "סוג מטען:",
+            normalYuk: "מטען רגיל",
+            ciftYuk: "העמסה כפולה",
+            belirtiniz: "ציין (ידני)",
+            yukDetay: "פרטי מטען:",
+            ucretTur: "סוג תשלום:",
+            nakit: "מזומן",
+            krediKarti: "כרטיס אשראי",
+            ucretsiz: "חינם",
+            tutarGir: "הזן סכום:",
+            addList: "הוסף לרשימה",
+            undo: "בטל פעולה אחרונה",
+            havuzTitle: "🚗 ניהול מאגר לוחות",
+            havuzDesc1: "ישנם",
+            havuzDesc2: "מספרי רישוי מוכנים במאגר.",
+            exportPool: "📥 הורד מאגר CSV",
+            importPool: "📤 העלה מאגר CSV",
+            searchLabel: "חפש מספר רישוי ברשימה:",
+            print: "הדפס דוח (A4)",
+            excel: "הורד CSV (.csv)",
+            importCsv: "העלה CSV (.csv)",
+            resetAll: "נקה רשימה",
+            emptyState: "טרם נוספו רישומי רכב. תצוגה מקדימה תופיע כאן לאחר הוספה.",
+            reportTitle: "דוח סיכום כניסה - יציאה ותשלומים לרכב",
+            totalArac: "סך הכל כלי רכב:",
+            totalUcret: "סך כל סכום העמלות:",
+            nakitArac: "רכבים משלמים במזומן:",
+            nakitUcret: "סכום מזומן:",
+            krediArac: "רכבי אשראי:",
+            krediTutar: "סכום אשראי:",
+            ucretsizArac: "רכבים חינם:",
+            girisArac: "רכבים נכנסים:",
+            cikisArac: "רכבים יוצאים:",
+            cokluYukArac: "רכבי מטענים מרובים:",
+            cokluYukPlaka: "לוחות מטענים מרובים:",
+            teslimEden: "נמסר על ידי",
+            teslimAlan: "התקבל על ידי",
+            vardiyaLabel: "משמרת:",
+            girisDetay: "רשימת פרטי כניסת רכבים",
+            cikisDetay: "רשימת פרטי יציאת רכבים",
+            sNo: "מס'",
+            tarih: "תאריך",
+            islem: "פעולה",
+            sil: "מחק",
+            pageTotal: "סך הכל לעמוד זה:",
+            searchNotFound: "לא נמצאו רשומות תואמות.",
+            adet: "יחידות",
+            belirtilmedi: "לא צויין",
+            kayitYok: "אין רישומים.",
+            girilmedi: "לא הוזן",
+            ciftYuklemeMetin: "העמסה כפולה",
+            imzaText: 'מפתח ובעל רישיון: <span class="vurgulu-isim">Deniz GÜRBÜZ</span> | כל הזכויות שמורות.',
+            csvFileName: "rishumey_rechev.csv",
+            poolCsvFileName: "maagar_luhot.csv",
+            csvHeaders: ["תאריך", "לוחית", "סוג רכב", "כיוון", "סוג מטען", "סוג תשלום", "סכום"],
+            currency: "₪",
+            langName: "עברית",
+            modalTitleText: "בחירת שפה ומטבע",
+            modalDescText: "אנא בחר את שפת הממשק. המטבע יוגדר אוטומטית בהתאם לשפה שתבחר.",
+            modalBtnText: "המשך"
+        },
+        ru: {
+            title: "Панель регистрации и управления транспортными средствами",
+            sira: "№:",
+            tarihSec: "Выберите дату:",
+            personel: "Ответственный сотрудник:",
+            vardiya: "Часы работы:",
+            plaka: "Номер автомобиля:",
+            aracTipi: "Тип ТС:",
+            tir: "Фура",
+            kirkayak: "Многоосный",
+            onteker: "10-колесный",
+            diger: "Другой",
+            yon: "Направление (Вход/Выход):",
+            giris: "Въезд",
+            cikis: "Выезд",
+            yukTipi: "Тип груза:",
+            normalYuk: "Обычный груз",
+            ciftYuk: "Двойная загрузка",
+            belirtiniz: "Указать (ручной)",
+            yukDetay: "Детали груза:",
+            ucretTur: "Тип оплаты:",
+            nakit: "Наличные",
+            krediKarti: "Кредитная карта",
+            ucretsiz: "Бесплатно",
+            tutarGir: "Введите сумму:",
+            addList: "Добавить в список",
+            undo: "Отменить действие",
+            havuzTitle: "🚗 Управление пулом номеров",
+            havuzDesc1: "В пуле доступно",
+            havuzDesc2: "номеров.",
+            exportPool: "📥 Скачать пул CSV",
+            importPool: "📤 Загрузить пул CSV",
+            searchLabel: "Поиск номера в списке:",
+            print: "Печать отчета (A4)",
+            excel: "Скачать CSV (.csv)",
+            importCsv: "Загрузить CSV (.csv)",
+            resetAll: "Очистить список",
+            emptyState: "Записи пока не добавлены. Предпросмотр отчета появится здесь.",
+            reportTitle: "СВОДНЫЙ ОТЧЕТ ПО ВЪЕЗДУ, ВЫЕЗДУ И ОПЛАТЕ ТС",
+            totalArac: "Всего автомобилей:",
+            totalUcret: "Общая сумма сборов:",
+            nakitArac: "Авто с оплатой наличными:",
+            nakitUcret: "Сумма наличных:",
+            krediArac: "Авто с картами:",
+            krediTutar: "Сумма по картам:",
+            ucretsizArac: "Бесплатные авто:",
+            girisArac: "Въехавшие авто:",
+            cikisArac: "Выехавшие авто:",
+            cokluYukArac: "Авто с мультигрузом:",
+            cokluYukPlaka: "Номера мультигруза:",
+            teslimEden: "СДАЛ",
+            teslimAlan: "ПРИНЯЛ",
+            vardiyaLabel: "Смена:",
+            girisDetay: "ПОДРОБНЫЙ СПИСОК ВЪЕЗДА ТС",
+            cikisDetay: "ПОДРОБНЫЙ СПИСОК ВЫЕЗДА ТС",
+            sNo: "№",
+            tarih: "Дата",
+            islem: "Действие",
+            sil: "Удалить",
+            pageTotal: "ИТОГО ЗА ЭТУ СТРАНИЦУ:",
+            searchNotFound: "Записи по вашему запросу не найдены.",
+            adet: "шт.",
+            belirtilmedi: "Не указано",
+            kayitYok: "Нет записей.",
+            girilmedi: "НЕ ВВЕДЕНО",
+            ciftYuklemeMetin: "Двойная загрузка",
+            imzaText: 'Разработчик и владелец лицензии: <span class="vurgulu-isim">Deniz GÜRBÜZ</span> | Все права защищены.',
+            csvFileName: "uchet_transporta.csv",
+            poolCsvFileName: "baza_nomerov.csv",
+            csvHeaders: ["Дата", "Номер", "Тип ТС", "Направление", "Тип груза", "Тип оплаты", "Сумма"],
+            currency: "₽",
+            langName: "Русский",
+            modalTitleText: "Выбор языка и валюты",
+            modalDescText: "Пожалуйста, выберите язык интерфейса. Валюта будет установлена автоматически.",
+            modalBtnText: "Продолжить"
+        },
+        zh: {
+            title: "车辆登记与管理面板",
+            sira: "序号:",
+            tarihSec: "选择日期:",
+            personel: "值班人员:",
+            vardiya: "工作时间:",
+            plaka: "车牌号:",
+            aracTipi: "车辆类型:",
+            tir: "半挂车",
+            kirkayak: "多桥货车",
+            onteker: "十轮货车",
+            diger: "其他",
+            yon: "方向 (进/出):",
+            giris: "驶入",
+            cikis: "驶出",
+            yukTipi: "货物类型:",
+            normalYuk: "普通货物",
+            ciftYuk: "双倍装载",
+            belirtiniz: "指定 (手动)",
+            yukDetay: "货物详情:",
+            ucretTur: "支付方式:",
+            nakit: "现金",
+            krediKarti: "信用卡",
+            ucretsiz: "免费",
+            tutarGir: "输入金额:",
+            addList: "添加到列表",
+            undo: "撤销上一步",
+            havuzTitle: "🚗 车牌库管理",
+            havuzDesc1: "库中已有",
+            havuzDesc2: "个车牌可供建议。",
+            exportPool: "📥 下载车牌库 CSV",
+            importPool: "📤 上传车牌库 CSV",
+            searchLabel: "在列表中搜索车牌:",
+            print: "打印报告 (A4)",
+            excel: "下载 CSV (.csv)",
+            importCsv: "上传 CSV (.csv)",
+            resetAll: "清空列表",
+            emptyState: "暂无车辆记录。添加后将在此处显示A4报告预览。",
+            reportTitle: "车辆进出及费用汇总报告",
+            totalArac: "总车辆数:",
+            totalUcret: "总费用金额:",
+            nakitArac: "现金支付车辆:",
+            nakitUcret: "现金总额:",
+            krediArac: "信用卡支付车辆:",
+            krediTutar: "信用卡总额:",
+            ucretsizArac: "免费车辆数:",
+            girisArac: "驶入车辆数:",
+            cikisArac: "驶出车辆数:",
+            cokluYukArac: "多重载货车辆:",
+            cokluYukPlaka: "多重载货车牌:",
+            teslimEden: "交付人",
+            teslimAlan: "接收人",
+            vardiyaLabel: "工作班次:",
+            girisDetay: "车辆驶入详细列表",
+            cikisDetay: "车辆驶出详细列表",
+            sNo: "序号",
+            tarih: "日期",
+            islem: "操作",
+            sil: "删除",
+            pageTotal: "本页总计金额:",
+            searchNotFound: "未找到符合条件的记录。",
+            adet: "辆",
+            belirtilmedi: "未指定",
+            kayitYok: "无记录",
+            girilmedi: "未输入",
+            ciftYuklemeMetin: "双倍装载",
+            imzaText: '开发者与许可证所有人：<span class="vurgulu-isim">Deniz GÜRBÜZ</span> | 保留所有权利。',
+            csvFileName: "cheliang_jilu.csv",
+            poolCsvFileName: "chepai_beiyong.csv",
+            csvHeaders: ["日期", "车牌号", "车辆类型", "方向", "货物类型", "支付方式", "金额"],
+            currency: "¥",
+            langName: "中文",
+            modalTitleText: "选择语言与货币",
+            modalDescText: "请选择您的首选语言。货币将根据您的语言选择自动设置。",
+            modalBtnText: "继续"
+        },
+        es: {
+            title: "Panel de Registro y Gestión de Vehículos",
+            sira: "N°:",
+            tarihSec: "Seleccionar Fecha:",
+            personel: "Personal Asignado:",
+            vardiya: "Horario de Trabajo:",
+            plaka: "Placa del Vehículo:",
+            aracTipi: "Tipo de Vehículo:",
+            tir: "Tráiler",
+            kirkayak: "Multieje",
+            onteker: "10 Ruedas",
+            diger: "Otro",
+            yon: "Dirección (Entrada/Salida):",
+            giris: "Entrada",
+            cikis: "Salida",
+            yukTipi: "Tipo de Carga:",
+            normalYuk: "Carga Normal",
+            ciftYuk: "Doble Carga",
+            belirtiniz: "Especificar (Manual)",
+            yukDetay: "Detalle de Carga:",
+            ucretTur: "Tipo de Pago:",
+            nakit: "Efectivo",
+            krediKarti: "Tarjeta de Crédito",
+            ucretsiz: "Gratis",
+            tutarGir: "Ingrese el monto:",
+            addList: "Añadir a la Lista",
+            undo: "Deshacer Acción",
+            havuzTitle: "🚗 Gestión de Pool de Placas",
+            havuzDesc1: "Hay",
+            havuzDesc2: "placas listas en el pool.",
+            exportPool: "📥 Descargar CSV de Pool",
+            importPool: "📤 Subir CSV de Pool",
+            searchLabel: "Buscar Placa en la Lista:",
+            print: "Imprimir Informe (A4)",
+            excel: "Descargar CSV (.csv)",
+            importCsv: "Subir CSV (.csv)",
+            resetAll: "Limpiar Lista",
+            emptyState: "Aún no hay registros. La vista previa aparecerá aquí.",
+            reportTitle: "INFORME RESUMIDO DE ENTRADA, SALIDA Y TARIFAS DE VEHÍCULOS",
+            totalArac: "Vehículos Totales:",
+            totalUcret: "Monto Total de Tarifas:",
+            nakitArac: "Vehículos en Efectivo:",
+            nakitUcret: "Monto en Efectivo:",
+            krediArac: "Vehículos con Tarjeta:",
+            krediTutar: "Monto con Tarjeta:",
+            ucretsizArac: "Vehículos Gratis:",
+            girisArac: "Vehículos Entrantes:",
+            cikisArac: "Vehículos Salientes:",
+            cokluYukArac: "Vehículos con Carga Múltiple:",
+            cokluYukPlaka: "Placas de Carga Múltiple:",
+            teslimEden: "ENTREGADO POR",
+            teslimAlan: "RECIBIDO POR",
+            vardiyaLabel: "Turno:",
+            girisDetay: "LISTA DETALLADA DE ENTRADAS",
+            cikisDetay: "LISTA DETALLADA DE SALIDAS",
+            sNo: "N°",
+            tarih: "Fecha",
+            islem: "Acción",
+            sil: "Eliminar",
+            pageTotal: "MONTO TOTAL DE ESTA PÁGINA:",
+            searchNotFound: "No se encontraron registros coincidentes.",
+            adet: "Unidades",
+            belirtilmedi: "No especificado",
+            kayitYok: "Sin registros.",
+            girilmedi: "NO INGRESADO",
+            ciftYuklemeMetin: "Doble Carga",
+            imzaText: 'Desarrollador y Propietario de la Licencia: <span class="vurgulu-isim">Deniz GÜRBÜZ</span> | Todos los derechos reservados.',
+            csvFileName: "registros_vehiculos.csv",
+            poolCsvFileName: "respaldo_placas.csv",
+            csvHeaders: ["Fecha", "Placa", "Tipo de Vehiculo", "Direccion", "Tipo de Carga", "Tipo de Pago", "Monto"],
+            currency: "€",
+            langName: "Español",
+            modalTitleText: "Selección de Idioma y Moneda",
+            modalDescText: "Por favor seleccione su idioma preferido. La moneda se configurará automáticamente.",
+            modalBtnText: "Continuar"
+        },
+        nl: {
+            title: "Voertuigregistratie & Beheerpaneel",
+            sira: "Nr:",
+            tarihSec: "Selecteer Datum:",
+            personel: "Medewerker:",
+            vardiya: "Werktijden:",
+            plaka: "Kentekenplaat:",
+            aracTipi: "Voertuigtype:",
+            tir: "Trailer",
+            kirkayak: "Vrachtwagen",
+            onteker: "10-wieler",
+            diger: "Overig",
+            yon: "Richting (In/Uit):",
+            giris: "Invoer",
+            cikis: "Uitvoer",
+            yukTipi: "Ladingswijze:",
+            normalYuk: "Normale Lading",
+            ciftYuk: "Dubbele Lading",
+            belirtiniz: "Specificeren (Handmatig)",
+            yukDetay: "Lading Detail:",
+            ucretTur: "Betaalmethode:",
+            nakit: "Contant",
+            krediKarti: "Creditcard",
+            ucretsiz: "Gratis",
+            tutarGir: "Voer Bedrag In:",
+            addList: "Toevoegen aan Lijst",
+            undo: "Laatste Actie Ongedaan Maken",
+            havuzTitle: "🚗 Kentekenpool Beheer",
+            havuzDesc1: "Er zijn",
+            havuzDesc2: "kentekens klaar in de pool.",
+            exportPool: "📥 Download Pool CSV",
+            importPool: "📤 Upload Pool CSV",
+            searchLabel: "Zoek Kenteken in Lijst:",
+            print: "Rapport Afdrukken (A4)",
+            excel: "Download CSV (.csv)",
+            importCsv: "Upload CSV (.csv)",
+            resetAll: "Lijst Leegmaken",
+            emptyState: "Nog geen voertuigregistraties. Het A4-rapportvoorbeeld verschijnt hier.",
+            reportTitle: "VOERTUIG IN- EN UITSTAP & KOSTEN OVERZICHTSRAPPORT",
+            totalArac: "Totaal Aantal Voertuigen:",
+            totalUcret: "Totaal Kostenbedrag:",
+            nakitArac: "Contant Betalende Voertuigen:",
+            nakitUcret: "Contant Bedrag:",
+            krediArac: "Creditcard Voertuigen:",
+            krediTutar: "Creditcard Bedrag:",
+            ucretsizArac: "Gratis Voertuigen:",
+            girisArac: "Inkomende Voertuigen:",
+            cikisArac: "Uitgaande Voertuigen:",
+            cokluYukArac: "Meerdere Ladingsvoertuigen:",
+            cokluYukPlaka: "Meerdere Ladingskentekens:",
+            teslimEden: "OVERGEDRAGEN DOOR",
+            teslimAlan: "ONTVANGEN DOOR",
+            vardiyaLabel: "Dienst:",
+            girisDetay: "VOERTUIG INKOMENDE DETAILTIJDS",
+            cikisDetay: "VOERTUIG UITGAANDE DETAILTIJDS",
+            sNo: "Nr",
+            tarih: "Datum",
+            islem: "Actie",
+            sil: "Verwijderen",
+            pageTotal: "TOTAALBEDRAG DEZE PAGINA:",
+            searchNotFound: "Geen records gevonden die overeenkomen.",
+            adet: "Stuks",
+            belirtilmedi: "Niet opgegeven",
+            kayitYok: "Geen records.",
+            girilmedi: "NIET INGEVOERD",
+            ciftYuklemeMetin: "Dubbele Lading",
+            imzaText: 'Ontwikkelaar & Licentiehouder: <span class="vurgulu-isim">Deniz GÜRBÜZ</span> | Alle rechten voorbehouden.',
+            csvFileName: "voertuig_registraties.csv",
+            poolCsvFileName: "kenteken_pool_backup.csv",
+            csvHeaders: ["Datum", "Kenteken", "Voertuigtype", "Richting", "Ladingswijze", "Betaalmethode", "Bedrag"],
+            currency: "€",
+            langName: "Nederlands",
+            modalTitleText: "Taal- en Valutaselectie",
+            modalDescText: "Selecteer uw taal. De valuta wordt automatisch ingesteld op basis van uw keuze.",
+            modalBtnText: "Doorgaan"
+        },
+        ko: {
+            title: "차량 등록 및 관리 패널",
+            sira: "순번:",
+            tarihSec: "날짜 선택:",
+            personel: "담당 직원:",
+            vardiya: "근무 시간:",
+            plaka: "차량 번호판:",
+            aracTipi: "차량 유형:",
+            tir: "대형 트럭",
+            kirkayak: "다축 트럭",
+            onteker: "10륜 트럭",
+            diger: "기타",
+            yon: "방향 (입고/출고):",
+            giris: "입고",
+            cikis: "출고",
+            yukTipi: "화물 유형:",
+            normalYuk: "일반 화물",
+            ciftYuk: "복수 적재",
+            belirtiniz: "지정 (수동)",
+            yukDetay: "화물 세부정보:",
+            ucretTur: "결제 방식:",
+            nakit: "현금",
+            krediKarti: "신용카드",
+            ucretsiz: "무료",
+            tutarGir: "금액 입력:",
+            addList: "목록에 추가",
+            undo: "마지막 작업 취소",
+            havuzTitle: "🚗 번호판 풀 관리",
+            havuzDesc1: "풀에",
+            havuzDesc2: "개의 번호판이 준비되어 있습니다.",
+            exportPool: "📥 풀 CSV 다운로드",
+            importPool: "📤 풀 CSV 업로드",
+            searchLabel: "목록에서 번호판 검색:",
+            print: "보고서 인쇄 (A4)",
+            excel: "CSV 다운로드 (.csv)",
+            importCsv: "CSV 업로드 (.csv)",
+            resetAll: "목록 초기화",
+            emptyState: "등록된 차량이 없습니다. 추가하면 A4 보고서 미리보기가 표시됩니다.",
+            reportTitle: "차량 입출고 및 요금 요약 보고서",
+            totalArac: "총 차량 대수:",
+            totalUcret: "총 요금 합계:",
+            nakitArac: "현금 결제 차량:",
+            nakitUcret: "현금 총액:",
+            krediArac: "카드 결제 차량:",
+            krediTutar: "카드 총액:",
+            ucretsizArac: "무료 차량 대수:",
+            girisArac: "입고 차량 대수:",
+            cikisArac: "출고 차량 대수:",
+            cokluYukArac: "복수 적재 차량:",
+            cokluYukPlaka: "복수 적재 번호판:",
+            teslimEden: "인계자",
+            teslimAlan: "인수자",
+            vardiyaLabel: "근무 조:",
+            girisDetay: "차량 입고 상세 목록",
+            cikisDetay: "차량 출고 상세 목록",
+            sNo: "순번",
+            tarih: "날짜",
+            islem: "작업",
+            sil: "삭제",
+            pageTotal: "이번 페이지 합계:",
+            searchNotFound: "검색 결과가 없습니다.",
+            adet: "대",
+            belirtilmedi: "지정되지 않음",
+            kayitYok: "기록 없음",
+            girilmedi: "미입력",
+            ciftYuklemeMetin: "복수 적재",
+            imzaText: '개발자 및 라이선스 소유자: <span class="vurgulu-isim">Deniz GÜRBÜZ</span> | 판권 소유.',
+            csvFileName: "charyang_deungrok.csv",
+            poolCsvFileName: "beonhopan_pool.csv",
+            csvHeaders: ["날짜", "번호판", "차량유형", "방향", "화물유형", "결제방식", "금액"],
+            currency: "₩",
+            langName: "한국어",
+            modalTitleText: "언어 및 통화 선택",
+            modalDescText: "사용할 언어를 선택하세요. 통화는 선택한 언어에 맞춰 자동으로 설정됩니다.",
+            modalBtnText: "계속하기"
+        },
+        ja: {
+            title: "車両登録・管理パネル",
+            sira: "No:",
+            tarihSec: "日付選択:",
+            personel: "担当スタッフ:",
+            vardiya: "勤務時間:",
+            plaka: "車両ナンバー:",
+            aracTipi: "車両タイプ:",
+            tir: "大型トラック",
+            kirkayak: "多軸トラック",
+            onteker: "10輪車",
+            diger: "その他",
+            yon: "方向 (入場/退場):",
+            giris: "入場",
+            cikis: "退場",
+            yukTipi: "積荷タイプ:",
+            normalYuk: "通常積荷",
+            ciftYuk: "二重積載",
+            belirtiniz: "指定 (手動)",
+            yukDetay: "積荷詳細:",
+            ucretTur: "支払方法:",
+            nakit: "現金",
+            krediKarti: "クレジットカード",
+            ucretsiz: "無料",
+            tutarGir: "金額を入力:",
+            addList: "リストに追加",
+            undo: "直前の操作を取り消す",
+            havuzTitle: "🚗 ナンバープール管理",
+            havuzDesc1: "プールに",
+            havuzDesc2: "件のナンバーが登録されています。",
+            exportPool: "📥 プールCSVダウンロード",
+            importPool: "📤 プールCSVアップロード",
+            searchLabel: "リストからナンバー検索:",
+            print: "レポート印刷 (A4)",
+            excel: "CSVダウンロード (.csv)",
+            importCsv: "CSVアップロード (.csv)",
+            resetAll: "リストをクリア",
+            emptyState: "車両登録はまだありません。追加するとA4プレビューが表示されます。",
+            reportTitle: "車両入退場および料金概要レポート",
+            totalArac: "総車両数:",
+            totalUcret: "総料金合計:",
+            nakitArac: "現金支払い車両:",
+            nakitUcret: "現金合計:",
+            krediArac: "カード支払い車両:",
+            krediTutar: "カード合計:",
+            ucretsizArac: "無料車両数:",
+            girisArac: "入場車両数:",
+            cikisArac: "退場車両数:",
+            cokluYukArac: "複数積載車両:",
+            cokluYukPlaka: "複数積載ナンバー:",
+            teslimEden: "引き渡し担当",
+            teslimAlan: "受領担当",
+            vardiyaLabel: "勤務シフト:",
+            girisDetay: "車両入場詳細リスト",
+            cikisDetay: "車両退場詳細リスト",
+            sNo: "No",
+            tarih: "日付",
+            islem: "操作",
+            sil: "削除",
+            pageTotal: "このページの合計金額:",
+            searchNotFound: "一致するレコードが見つかりません。",
+            adet: "台",
+            belirtilmedi: "指定なし",
+            kayitYok: "記録なし",
+            girilmedi: "未入力",
+            ciftYuklemeMetin: "二重積載",
+            imzaText: '開発者およびライセンス所有者: <span class="vurgulu-isim">Deniz GÜRBÜZ</span> | 無断転載を禁じます。',
+            csvFileName: "sharyo_roku.csv",
+            poolCsvFileName: "number_pool.csv",
+            csvHeaders: ["日付", "ナンバー", "車両タイプ", "方向", "積荷タイプ", "支払方法", "金額"],
+            currency: "¥",
+            langName: "日本語",
+            modalTitleText: "言語と通貨の選択",
+            modalDescText: "言語を選択してください。通貨は選択した言語に基づいて自動設定されます。",
+            modalBtnText: "続行"
+        },
+        hi: {
+            title: "वाहन पंजीकरण और प्रबंधन पैनल",
+            sira: "क्रम:",
+            tarihSec: "तारीख चुनें:",
+            personel: "कर्मचारी:",
+            vardiya: "कार्य समय:",
+            plaka: "वाहन नंबर:",
+            aracTipi: "वाहन प्रकार:",
+            tir: "ट्रक",
+            kirkayak: "मल्टी-एक्सल",
+            onteker: "10-पहिया",
+            diger: "अन्य",
+            yon: "दिशा (प्रवेश/निकास):",
+            giris: "प्रवेश",
+            cikis: "निकास",
+            yukTipi: "भार प्रकार:",
+            normalYuk: "सामान्य भार",
+            ciftYuk: "डबल लोड",
+            belirtiniz: "निर्दिष्ट करें (मैनुअल)",
+            yukDetay: "भार विवरण:",
+            ucretTur: "भुगतान प्रकार:",
+            nakit: "नकद",
+            krediKarti: "क्रेडिट कार्ड",
+            ucretsiz: "निःशुल्क",
+            tutarGir: "राशि दर्ज करें:",
+            addList: "सूची में जोड़ें",
+            undo: "अंतिम क्रिया पूर्ववत करें",
+            havuzTitle: "🚗 प्लेट पूल प्रबंधन",
+            havuzDesc1: "पूल में",
+            havuzDesc2: "नंबर उपलब्ध हैं।",
+            exportPool: "📥 पूल CSV डाउनलोड करें",
+            importPool: "📤 पूल CSV अपलोड करें",
+            searchLabel: "सूची में नंबर खोजें:",
+            print: "रिपोर्ट प्रिंट करें (A4)",
+            excel: "CSV डाउनलोड करें (.csv)",
+            importCsv: "CSV अपलोड करें (.csv)",
+            resetAll: "सूची साफ़ करें",
+            emptyState: "अभी कोई वाहन दर्ज नहीं किया गया है।",
+            reportTitle: "वाहन प्रवेश - निकास और शुल्क सारांश रिपोर्ट",
+            totalArac: "कुल वाहन:",
+            totalUcret: "कुल शुल्क राशि:",
+            nakitArac: "नकद भुगतान वाहन:",
+            nakitUcret: "नकद राशि:",
+            krediArac: "क्रेडिट कार्ड वाहन:",
+            krediTutar: "कार्ड राशि:",
+            ucretsizArac: "निःशुल्क वाहन:",
+            girisArac: "आने वाले वाहन:",
+            cikisArac: "जाने वाले वाहन:",
+            cokluYukArac: "मल्टी-लोड वाहन:",
+            cokluYukPlaka: "मल्टी-लोड नंबर:",
+            teslimEden: "सौंपने वाला",
+            teslimAlan: "प्राप्तकर्ता",
+            vardiyaLabel: "शिफ्ट:",
+            girisDetay: "वाहन प्रवेश विवरण सूची",
+            cikisDetay: "वाहन निकास विवरण सूची",
+            sNo: "क्र.",
+            tarih: "तारीख",
+            islem: "कार्रवाई",
+            sil: "हटाएं",
+            pageTotal: "इस पृष्ठ की कुल राशि:",
+            searchNotFound: "कोई मिलान रिकॉर्ड नहीं मिला.",
+            adet: "वाहन",
+            belirtilmedi: "निर्दिष्ट नहीं",
+            kayitYok: "कोई रिकॉर्ड नहीं।",
+            girilmedi: "दर्ज नहीं किया गया",
+            ciftYuklemeMetin: "डबल लोड",
+            imzaText: 'डेवलपर और लाइसेंस धारक: <span class="vurgulu-isim">Deniz GÜRBÜZ</span> | सर्वाधिकार सुरक्षित।',
+            csvFileName: "vahan_panjiyan.csv",
+            poolCsvFileName: "plate_pool.csv",
+            csvHeaders: ["तारीख", "नंबर", "वाहन प्रकार", "दिशा", "भार प्रकार", "भुगतान प्रकार", "राशि"],
+            currency: "₹",
+            langName: "हिन्दी",
+            modalTitleText: "भाषा और मुद्रा चयन",
+            modalDescText: "कृपया अपनी भाषा चुनें। मुद्रा आपकी भाषा के अनुसार स्वतः सेट हो जाएगी।",
+            modalBtnText: "जारी रखें"
+        },
+        de: {
+            title: "Fahrzeugregistrierungs- und Verwaltungspanel",
+            sira: "Nr:",
+            tarihSec: "Datum Auswählen:",
+            personel: "Mitarbeiter:",
+            vardiya: "Arbeitszeiten:",
+            plaka: "Kennzeichen:",
+            aracTipi: "Fahrzeugtyp:",
+            tir: "Sattelschlepper",
+            kirkayak: "LKW",
+            onteker: "10-Achser",
+            diger: "Andere",
+            yon: "Richtung (Ein/Aus):",
+            giris: "Einfahrt",
+            cikis: "Ausfahrt",
+            yukTipi: "Ladetyp:",
+            normalYuk: "Normale Ladung",
+            ciftYuk: "Doppelte Ladung",
+            belirtiniz: "Angeben (Manuell)",
+            yukDetay: "Ladungsdetails:",
+            ucretTur: "Zahlungsart:",
+            nakit: "Bar",
+            krediKarti: "Kreditkarte",
+            ucretsiz: "Kostenlos",
+            tutarGir: "Betrag Eingeben:",
+            addList: "Zur Liste Hinzufügen",
+            undo: "Letzte Aktion Rückgängig",
+            havuzTitle: "🚗 Kennzeichen-Pool-Verwaltung",
+            havuzDesc1: "Es sind",
+            havuzDesc2: "Kennzeichen im Pool bereit.",
+            exportPool: "📥 Pool-CSV Herunterladen",
+            importPool: "📤 Pool-CSV Hochladen",
+            searchLabel: "Kennzeichen in Liste Suchen:",
+            print: "Bericht Drucken (A4)",
+            excel: "CSV Herunterladen (.csv)",
+            importCsv: "CSV Hochladen (.csv)",
+            resetAll: "Liste Löschen",
+            emptyState: "Noch keine Fahrzeuge erfasst. Die A4-Vorschau wird hier angezeigt.",
+            reportTitle: "FAHRZEUG EINFINDRUNGS- & GEBÜHREN-ZUSAMMENFASSUNG",
+            totalArac: "Gesamte Fahrzeuge:",
+            totalUcret: "Gesamtgebührenbetrag:",
+            nakitArac: "Barzahlende Fahrzeuge:",
+            nakitUcret: "Barbetrag:",
+            krediArac: "Kreditkarten-Fahrzeuge:",
+            krediTutar: "Kreditkartenbetrag:",
+            ucretsizArac: "Kostenlose Fahrzeuge:",
+            girisArac: "Einführende Fahrzeuge:",
+            cikisArac: "Ausführende Fahrzeuge:",
+            cokluYukArac: "Mehrfach geladene Fahrzeuge:",
+            cokluYukPlaka: "Mehrfach-Kennzeichen:",
+            teslimEden: "ÜBERGEBEN VON",
+            teslimAlan: "ERHALTEN VON",
+            vardiyaLabel: "Schicht:",
+            girisDetay: "FAHRZEUG EINFHRUNGSDETAILLISTE",
+            cikisDetay: "FAHRZEUG AUSFAHRUNGSDETAILLISTE",
+            sNo: "Nr",
+            tarih: "Datum",
+            islem: "Aktion",
+            sil: "Löschen",
+            pageTotal: "GESAMTBETRAG DIESER SEITE:",
+            searchNotFound: "Keine übereinstimmenden Datensätze gefunden.",
+            adet: "Stück",
+            belirtilmedi: "Nicht angegeben",
+            kayitYok: "Keine Einträge.",
+            girilmedi: "NICHT EINGETRAGEN",
+            ciftYuklemeMetin: "Doppelte Ladung",
+            imzaText: 'Entwickler & Lizenzinhaber: <span class="vurgulu-isim">Deniz GÜRBÜZ</span> | Alle Rechte vorbehalten.',
+            csvFileName: "fahrzeug_datensaetze.csv",
+            poolCsvFileName: "kennzeichen_pool.csv",
+            csvHeaders: ["Datum", "Kennzeichen", "Fahrzeugtyp", "Richtung", "Ladetyp", "Zahlungsart", "Betrag"],
+            currency: "€",
+            langName: "Deutsch",
+            modalTitleText: "Sprach- und Währungsauswahl",
+            modalDescText: "Bitte wählen Sie Ihre Sprache. Die Währung wird automatisch basierend auf Ihrer Wahl festgelegt.",
+            modalBtnText: "Weiter"
+        },
+        fr: {
+            title: "Panneau d'enregistrement et de gestion des véhicules",
+            sira: "N°:",
+            tarihSec: "Sélectionner Date:",
+            personel: "Personnel Assigné:",
+            vardiya: "Horaires de Travail:",
+            plaka: "Plaque d'immatriculation:",
+            aracTipi: "Type de Véhicule:",
+            tir: "Camion Semi",
+            kirkayak: "Camion Multi-essieux",
+            onteker: "10 Roues",
+            diger: "Autre",
+            yon: "Direction (Entrée/Sortie):",
+            giris: "Entrée",
+            cikis: "Sortie",
+            yukTipi: "Type de Cargaison:",
+            normalYuk: "Charge Normale",
+            ciftYuk: "Double Charge",
+            belirtiniz: "Préciser (Manuel)",
+            yukDetay: "Détail de Charge:",
+            ucretTur: "Type de Paiement:",
+            nakit: "Espèces",
+            krediKarti: "Carte de Crédit",
+            ucretsiz: "Gratuit",
+            tutarGir: "Entrer le montant:",
+            addList: "Ajouter à la Liste",
+            undo: "Annuler l'action",
+            havuzTitle: "🚗 Gestion du Pool de Plaques",
+            havuzDesc1: "Il y a",
+            havuzDesc2: "plaques prêtes dans le pool.",
+            exportPool: "📥 Télécharger CSV Pool",
+            importPool: "📤 Importer CSV Pool",
+            searchLabel: "Rechercher une plaque:",
+            print: "Imprimer le Rapport (A4)",
+            excel: "Télécharger CSV (.csv)",
+            importCsv: "Importer CSV (.csv)",
+            resetAll: "Effacer la Liste",
+            emptyState: "Aucun véhicule enregistré. L'aperçu apparaîtra ici.",
+            reportTitle: "RAPPORT RÉSUMÉ DES ENTRÉES, SORTIES ET FRAIS",
+            totalArac: "Total Véhicules:",
+            totalUcret: "Montant Total des Frais:",
+            nakitArac: "Véhicules Payant en Espèces:",
+            nakitUcret: "Montant Espèces:",
+            krediArac: "Véhicules par Carte:",
+            krediTutar: "Montant Carte:",
+            ucretsizArac: "Véhicules Gratuits:",
+            girisArac: "Véhicules Entrants:",
+            cikisArac: "Véhicules Sortants:",
+            cokluYukArac: "Véhicules multi-charges:",
+            cokluYukPlaka: "Plaques multi-charges:",
+            teslimEden: "REMIS PAR",
+            teslimAlan: "REÇU PAR",
+            vardiyaLabel: "Équipe:",
+            girisDetay: "LISTE DÉTAILLÉE DES ENTRÉES",
+            cikisDetay: "LISTE DÉTAILLÉE DES SORTIES",
+            sNo: "N°",
+            tarih: "Date",
+            islem: "Action",
+            sil: "Supprimer",
+            pageTotal: "MONTANT TOTAL DE CETTE PAGE:",
+            searchNotFound: "Aucun enregistrement trouvé.",
+            adet: "Unités",
+            belirtilmedi: "Non spécifié",
+            kayitYok: "Aucun enregistrement.",
+            girilmedi: "NON ENTRÉ",
+            ciftYuklemeMetin: "Double Charge",
+            imzaText: 'Développeur et Propriétaire de la Licence : <span class="vurgulu-isim">Deniz GÜRBÜZ</span> | Tous droits réservés.',
+            csvFileName: "registres_vehiculos.csv",
+            poolCsvFileName: "pool_plaques.csv",
+            csvHeaders: ["Date", "Plaque", "Type de Vehicule", "Direction", "Type de Charge", "Type de Paiement", "Montant"],
+            currency: "€",
+            langName: "Français",
+            modalTitleText: "Sélection de la langue et de la devise",
+            modalDescText: "Veuillez sélectionner votre langue. La devise sera définie automatiquement.",
+            modalBtnText: "Continuer"
+        },
+        ar: {
+            title: "لوحة تسجيل وإدارة المركبات",
+            sira: "الرقم:",
+            tarihSec: "حدد التاريخ:",
+            personel: "الموظف المسؤول:",
+            vardiya: "ساعات العمل:",
+            plaka: "رقم لوحة المركبة:",
+            aracTipi: "نوع المركبة:",
+            tir: "شاحنة نقل",
+            kirkayak: "شاحنة متعددة المحاور",
+            onteker: "10 عجلات",
+            diger: "آخر",
+            yon: "الاتجاه (دخول/خروج):",
+            giris: "دخول",
+            cikis: "خروج",
+            yukTipi: "نوع الحمولة:",
+            normalYuk: "حمولة عادية",
+            ciftYuk: "حمولة مزدوجة",
+            belirtiniz: "تحديد (يدوي)",
+            yukDetay: "تفاصيل الحمولة:",
+            ucretTur: "طريقة الدفع:",
+            nakit: "نقداً",
+            krediKarti: "بطاقة ائتمان",
+            ucretsiz: "مجاناً",
+            tutarGir: "أدخل المبلغ:",
+            addList: "إضافة إلى القائمة",
+            undo: "تراجع عن الإجراء الأخير",
+            havuzTitle: "🚗 إدارة حوض اللوحات",
+            havuzDesc1: "يوجد",
+            havuzDesc2: "لوحة جاهزة في الحوض.",
+            exportPool: "📥 تنزيل حوض CSV",
+            importPool: "📤 تحميل حوض CSV",
+            searchLabel: "ابحث عن اللوحة في القائمة:",
+            print: "طباعة التقرير (A4)",
+            excel: "تنزيل CSV (.csv)",
+            importCsv: "تحميل CSV (.csv)",
+            resetAll: "مسح القائمة",
+            emptyState: "لم يتم إدخال سجلات مركبات بعد. ستظهر معاينة تقرير A4 هنا.",
+            reportTitle: "تقرير ملخص دخول وخروج المركبات والرسوم",
+            totalArac: "إجمالي المركبات:",
+            totalUcret: "إجمالي مبلغ الرسوم:",
+            nakitArac: "المركبات الدافعة نقداً:",
+            nakitUcret: "مبلغ النقد:",
+            krediArac: "مركبات بطاقة الائتمان:",
+            krediTutar: "مبلغ بطاقة الائتمان:",
+            ucretsizArac: "المركبات المجانية:",
+            girisArac: "المركبات الداخلة:",
+            cikisArac: "المركبات الخارجة:",
+            cokluYukArac: "مركبات ذات حمولة متعددة:",
+            cokluYukPlaka: "لوحات الحمولة المتعددة:",
+            teslimEden: "تم التسليم بواسطة",
+            teslimAlan: "تم الاستلام بواسطة",
+            vardiyaLabel: "وردية العمل:",
+            girisDetay: "قائمة تفاصيل دخول المركبات",
+            cikisDetay: "قائمة تفاصيل خروج المركبات",
+            sNo: "الرقم",
+            tarih: "التاريخ",
+            islem: "الإجراء",
+            sil: "حذف",
+            pageTotal: "إجمالي مبلغ هذه الصفحة:",
+            searchNotFound: "لم يتم العثور على سجلات مطابقة.",
+            adet: "وحدة",
+            belirtilmedi: "غير محدد",
+            kayitYok: "لا توجد سجلات.",
+            girilmedi: "لم يتم الإدخال",
+            ciftYuklemeMetin: "حمولة مزدوجة",
+            imzaText: 'المطور ومالك الترخيص: <span class="vurgulu-isim">Deniz GÜRBÜZ</span> | جميع الحقوق محفوظة.',
+            csvFileName: "sijillat_al_ مركبات.csv",
+            poolCsvFileName: "hooz_al_lohat.csv",
+            csvHeaders: ["التاريخ", "الرقم", "نوع المركبة", "الاتجاه", "نوع الحمولة", "طريقة الدفع", "المبلغ"],
+            currency: "د.إ",
+            langName: "العربية",
+            modalTitleText: "اختيار اللغة والعملة",
+            modalDescText: "يرجى اختيار لغتك المفضلة. سيتم تعيين العملة تلقائياً بناءً على اختيارك للغة.",
+            modalBtnText: "متابعة"
+        }
+    };
+
+    var aktifDil = 'en';
+    var aktifParaBirimi = '$';
+    var araclar = [];
+    var plakaHavuzu = []; 
+    var sonGirilenUcret = "";
+
+    window.addEventListener('DOMContentLoaded', function() {
+        var kaydedilenDil = localStorage.getItem('app_lang');
+        var kaydedilenKurus = localStorage.getItem('app_currency');
+
+        if (!kaydedilenDil) {
+            // İlk açılış: Varsayılan olarak İngilizce ile modal gösterilsin
+            document.getElementById('setupModal').style.display = 'flex';
+            modalDilDegisti('en'); // Modal açılış metinlerini ayarla
+        } else {
+            // Daha önce seçim yapılmışsa direkt başlat
+            aktifDil = kaydedilenDil;
+            aktifParaBirimi = kaydedilenKurus || dilSozlugu[kaydedilenDil].currency;
+            uygulamaBaslat();
+        }
+    });
+
+    // Açılış modalındaki <select> değiştirildiğinde anlık olarak modal metinlerini çevirir
+    function modalDilDegisti(langCode) {
+        var t = dilSozlugu[langCode] || dilSozlugu['en'];
+        if(document.getElementById('modalTitle')) {
+            document.getElementById('modalTitle').innerText = t.modalTitleText;
+            document.getElementById('modalDesc').innerText = t.modalDescText;
+            document.getElementById('modalBtnConfirm').innerText = t.modalBtnText;
+        }
+    }
+
+    function ilkKurulumuTamamla() {
+        var selectEl = document.getElementById('modalLangSelect');
+        var selectedOption = selectEl.options[selectEl.selectedIndex];
+        var langCode = selectedOption.value;
+        var currencySymbol = selectedOption.getAttribute('data-currency');
+
+        aktifDil = langCode;
+        aktifParaBirimi = currencySymbol;
+
+        localStorage.setItem('app_lang', langCode);
+        localStorage.setItem('app_currency', currencySymbol);
+
+        document.getElementById('setupModal').style.display = 'none';
+        uygulamaBaslat();
+    }
+
+    function toggleLangMenu() {
+        var dropdown = document.getElementById('langDropdown');
+        dropdown.classList.toggle('active');
+    }
+
+    window.onclick = function(event) {
+        if (!event.target.closest('#langDropdown')) {
+            var dropdown = document.getElementById('langDropdown');
+            if (dropdown && dropdown.classList.contains('active')) {
+                dropdown.classList.remove('active');
+            }
+        }
+    }
+
+    function setLanguage(langCode, langName) {
+        aktifDil = langCode;
+        if (!localStorage.getItem('app_currency')) {
+            aktifParaBirimi = dilSozlugu[langCode].currency || '$';
+        }
+
+        localStorage.setItem('app_lang', langCode);
+
+        var btnTextEl = document.getElementById('langBtnText');
+        if(btnTextEl) {
+            btnTextEl.innerHTML = `🌐 ${langName} (${aktifParaBirimi}) <span style="font-size: 10px;">▼</span>`;
+        }
+
+        document.getElementById('langDropdown').classList.remove('active');
+        arayuzuCevir();
+        tutanakCiz();
+    }
+
+    function arayuzuCevir() {
+        var t = dilSozlugu[aktifDil] || dilSozlugu['en'];
+
+        document.getElementById('lblTitle').innerText = t.title;
+        document.getElementById('lblSira').innerText = t.sira;
+        document.getElementById('lblTarihSec').innerText = t.tarihSec;
+        document.getElementById('lblPersonel').innerText = t.personel;
+        document.getElementById('lblVardiya').innerText = t.vardiya;
+        document.getElementById('lblPlaka').innerText = t.plaka;
+        document.getElementById('lblAracTipi').innerText = t.aracTipi;
+        
+        document.getElementById('optTir').innerText = t.tir;
+        document.getElementById('optKirkayak').innerText = t.kirkayak;
+        document.getElementById('optOnTeker').innerText = t.onteker;
+        document.getElementById('optDiger').innerText = t.diger;
+
+        document.getElementById('lblYon').innerText = t.yon;
+        document.getElementById('optGiris').innerText = t.giris;
+        document.getElementById('optCikis').innerText = t.cikis;
+
+        document.getElementById('lblYukTipi').innerText = t.yukTipi;
+        document.getElementById('optNormalYuk').innerText = t.normalYuk;
+        document.getElementById('optCiftYuk').innerText = t.ciftYuklemeMetin;
+        document.getElementById('optBelirtiniz').innerText = t.belirtiniz;
+
+        document.getElementById('lblYukDetay').innerText = t.yukDetay;
+        document.getElementById('lblUcretTur').innerText = t.ucretTur;
+        
+        document.getElementById('optNakit').innerText = t.nakit;
+        document.getElementById('optKrediKarti').innerText = t.krediKarti;
+        document.getElementById('optUcretsiz').innerText = t.ucretsiz;
+
+        document.getElementById('lblTutarGir').innerText = t.tutarGir;
+        document.getElementById('btnAddList').innerText = t.addList;
+        document.getElementById('btnUndo').innerText = t.undo;
+
+        document.getElementById('lblHavuzTitle').innerText = t.havuzTitle;
+        document.getElementById('lblHavuzDesc1').innerText = t.havuzDesc1;
+        document.getElementById('lblHavuzDesc2').innerText = t.havuzDesc2;
+        document.getElementById('btnExportPool').innerText = t.exportPool;
+        document.getElementById('btnImportPool').innerText = t.importPool;
+
+        document.getElementById('lblSearchLabel').innerText = t.searchLabel;
+        document.getElementById('btnPrint').innerText = t.print;
+        document.getElementById('btnExcel').innerText = t.excel;
+        document.getElementById('btnImportCsv').innerText = t.importCsv;
+        document.getElementById('btnResetAll').innerText = t.resetAll;
+        document.getElementById('lblPanelImza').innerHTML = t.imzaText;
+
+        var btnTextEl = document.getElementById('langBtnText');
+        if(btnTextEl) {
+            btnTextEl.innerHTML = `🌐 ${t.langName} (${aktifParaBirimi}) <span style="font-size: 10px;">▼</span>`;
+        }
+
+        // Modal metinlerini de güncelle
+        if(document.getElementById('modalTitle')) {
+            document.getElementById('modalTitle').innerText = t.modalTitleText;
+            document.getElementById('modalDesc').innerText = t.modalDescText;
+            document.getElementById('modalBtnConfirm').innerText = t.modalBtnText;
+        }
+    }
+
+    function uygulamaBaslat() {
+        arayuzuCevir();
+
+        var bugun = new Date();
+        var yil = bugun.getFullYear();
+        var ay = String(bugun.getMonth() + 1).padStart(2, '0');
+        var gun = String(bugun.getDate()).padStart(2, '0');
+        
+        var dateEl = document.getElementById('inpTarih');
+        if(dateEl) {
+            dateEl.value = yil + '-' + ay + '-' + gun;
+            dateEl.addEventListener('change', function() { tutanakCiz(); });
+        }
+
+        var inpPlaka = document.getElementById('inpPlaka');
+        if(inpPlaka) {
+            inpPlaka.addEventListener('keypress', function(e) { if (e.key === 'Enter') { aracEkle(); } });
+        }
+        
+        var personelEl = document.getElementById('inpPersonel');
+        if(personelEl) {
+            if(localStorage.getItem('tutanak_personel')) { 
+                personelEl.value = localStorage.getItem('tutanak_personel'); 
+            }
+            personelEl.addEventListener('input', function() {
+                localStorage.setItem('tutanak_personel', this.value);
+                tutanakCiz();
+            });
+        }
+
+        var vardiyaEl = document.getElementById('inpVardiya');
+        if(vardiyaEl) {
+            if(localStorage.getItem('tutanak_vardiya')) { 
+                vardiyaEl.value = localStorage.getItem('tutanak_vardiya'); 
+            }
+            vardiyaEl.addEventListener('input', function() {
+                localStorage.setItem('tutanak_vardiya', this.value);
+                tutanakCiz();
+            });
+        }
+
+        var kaydedilenSonUcret = localStorage.getItem('tutanak_son_ucret');
+        if (kaydedilenSonUcret !== null && kaydedilenSonUcret !== undefined) {
+            sonGirilenUcret = kaydedilenSonUcret;
+            var inputTutarEl = document.getElementById('inpUcretTutar');
+            var ucretTurEl = document.getElementById('inpUcretTur');
+            if (inputTutarEl && ucretTurEl && ucretTurEl.value !== "Ücretsiz") {
+                inputTutarEl.value = sonGirilenUcret;
+            }
+        }
+
+        try {
+            var kayitliAraclar = localStorage.getItem('tutanak_araclar');
+            if (kayitliAraclar) {
+                araclar = JSON.parse(kayitliAraclar);
+                if (!Array.isArray(araclar)) { araclar = []; }
+            }
+        } catch (e) {
+            localStorage.removeItem('tutanak_araclar');
+            araclar = [];
+        }
+
+        try {
+            var kayitliHavuz = localStorage.getItem('tutanak_plaka_havuzu');
+            if (kayitliHavuz) {
+                plakaHavuzu = JSON.parse(kayitliHavuz);
+                if (!Array.isArray(plakaHavuzu)) { plakaHavuzu = []; }
+            }
+        } catch (e) {
+            localStorage.removeItem('tutanak_plaka_havuzu');
+            plakaHavuzu = [];
+        }
+
+        siraNoGuncelle();
+        plakaHavuzunuGuncelleUI(""); 
+        tutanakCiz();
+    }
+
+    function plakaInputYazildi(deger) {
+        var t = dilSozlugu[aktifDil] || dilSozlugu['en'];
+        var temizDeger = deger ? deger.trim().toUpperCase() : "";
+        this.value = temizDeger;
+        plakaHavuzunuGuncelleUI(temizDeger);
+    }
+
+    function plakaHavuzunaEkle(plaka) {
+        var t = dilSozlugu[aktifDil] || dilSozlugu['en'];
+        if (!plaka || plaka === "GİRİLMEDİ" || plaka === t.girilmedi) return;
+        if (!plakaHavuzu.includes(plaka)) {
+            plakaHavuzu.push(plaka);
+            plakaHavuzu.sort((a, b) => a.localeCompare(b, 'tr', { numeric: true }));
+            localStorage.setItem('tutanak_plaka_havuzu', JSON.stringify(plakaHavuzu));
+        }
+    }
+
+    function plakaHavuzunuGuncelleUI(filtreMetni) {
+        var datalist = document.getElementById('plakaHavuzuOnerileri');
+        var lblSayi = document.getElementById('lblHavuzSayisi');
+        if(!datalist) return;
+
+        datalist.innerHTML = "";
+        
+        if (filtreMetni && filtreMetni.length > 0) {
+            var filtrelenmis = plakaHavuzu.filter(function(p) {
+                return p.includes(filtreMetni);
+            });
+            var sinirliListe = filtrelenmis.slice(0, 5);
+
+            sinirliListe.forEach(function(plaka) {
+                var option = document.createElement('option');
+                option.value = plaka;
+                datalist.appendChild(option);
+            });
+        }
+
+        if(lblSayi) {
+            lblSayi.innerText = plakaHavuzu.length;
+        }
+    }
+
+    function plakaHavuzunuDisariAktar() {
+        var t = dilSozlugu[aktifDil] || dilSozlugu['en'];
+        if (plakaHavuzu.length === 0) {
+            alert("Plaka havuzu boş!");
+            return;
+        }
+        var csvSatirlari = [t.csvHeaders[1]];
+        plakaHavuzu.forEach(function(p) {
+            csvSatirlari.push(`"${p}"`);
+        });
+
+        var csvIcerik = "\uFEFF" + csvSatirlari.join("\n");
+        var blob = new Blob([csvIcerik], { type: 'text/csv;charset=utf-8;' });
+        var url = URL.createObjectURL(blob);
+        
+        var link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", t.poolCsvFileName);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    function plakaHavuzunuYukle(event) {
+        var file = event.target.files[0];
+        if (!file) return;
+
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                var icerik = e.target.result;
+                var satirlar = icerik.split(/\r\n|\n/);
+                var yeniEklenenler = 0;
+
+                satirlar.forEach(function(satir) {
+                    var temizSatir = satir.replace(/^"|"$/g, '').trim().toUpperCase();
+                    if (temizSatir && temizSatir !== "PLAKA" && temizSatir !== "PLATE" && temizSatir !== "לוחית" && temizSatir !== "НОМЕР" && temizSatir !== "车牌号" && temizSatir !== "PLACA" && temizSatir !== "KENTEKEN" && temizSatir !== "번호판" && temizSatir !== "ナンバー" && temizSatir !== "नंबर" && temizSatir !== "KENNZEICHEN" && temizSatir !== "PLAQUE" && temizSatir !== "الرقم") {
+                        if (!plakaHavuzu.includes(temizSatir)) {
+                            plakaHavuzu.push(temizSatir);
+                            yeniEklenenler++;
+                        }
+                    }
+                });
+
+                plakaHavuzu.sort((a, b) => a.localeCompare(b, 'tr', { numeric: true }));
+                localStorage.setItem('tutanak_plaka_havuzu', JSON.stringify(plakaHavuzu));
+                plakaHavuzunuGuncelleUI("");
+                alert(yeniEklenenler + " adet yeni plaka havüza eklendi.");
+            } catch (err) {
+                console.error("Plaka havuzu yükleme hatası:", err);
+            }
+        };
+        reader.readAsText(file, 'UTF-8');
+    }
+
+    function csvDisariAktar() {
+        var t = dilSozlugu[aktifDil] || dilSozlugu['en'];
+        if (araclar.length === 0) {
+            alert("Dışa aktarılacak kayıt bulunmuyor!");
+            return;
+        }
+        var csvSatirlari = [t.csvHeaders.join(",")];
+        araclar.forEach(function(a) {
+            var gosterimYon = (a.yon === "Giriş" || a.yon === t.giris) ? t.giris : t.cikis;
+            
+            var gosterimAracTipi = a.aracTipi;
+            if (a.aracTipi === "Tır") gosterimAracTipi = t.tir;
+            else if (a.aracTipi === "Kırkayak") gosterimAracTipi = t.kirkayak;
+            else if (a.aracTipi === "On teker") gosterimAracTipi = t.onteker;
+            else if (a.aracTipi === "Diğer") gosterimAracTipi = t.diger;
+
+            var gosterimUcretTur = a.ucretTur;
+            if (a.ucretTur === "Nakit") gosterimUcretTur = t.nakit;
+            else if (a.ucretTur === "Kredi Kartı") gosterimUcretTur = t.krediKarti;
+            else if (a.ucretTur === "Ücretsiz") gosterimUcretTur = t.ucretsiz;
+
+            var gosterimYukTipi = a.yukTipi;
+            if (a.yukTipi === "Normal Yük") gosterimYukTipi = t.normalYuk;
+            else if (a.yukTipi === "Çift Yükleme") gosterimYukTipi = t.ciftYuklemeMetin;
+
+            var gosterimPlaka = (a.plaka === "GİRİLMEDİ") ? t.girilmedi : a.plaka;
+
+            csvSatirlari.push(`"${a.tarih}","${gosterimPlaka}","${gosterimAracTipi}","${gosterimYon}","${gosterimYukTipi}","${gosterimUcretTur}","${a.ucret}"`);
+        });
+
+        var csvIcerik = "\uFEFF" + csvSatirlari.join("\n");
+        var blob = new Blob([csvIcerik], { type: 'text/csv;charset=utf-8;' });
+        var url = URL.createObjectURL(blob);
+        
+        var link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", t.csvFileName);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    function csvYukle(event) {
+        var file = event.target.files[0];
+        if (!file) return;
+
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                var icerik = e.target.result;
+                var satirlar = icerik.split(/\r\n|\n/);
+                var yeniAraclar = [];
+
+                for (var i = 1; i < satirlar.length; i++) {
+                    var satir = satirlar[i].trim();
+                    if (!satir) continue;
+                    
+                    var sutunlar = satir.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+                    if (sutunlar.length >= 7) {
+                        var tarih = sutunlar[0].replace(/^"|"$/g, '');
+                        var plaka = sutunlar[1].replace(/^"|"$/g, '');
+                        var aracTipi = sutunlar[2].replace(/^"|"$/g, '');
+                        var yon = sutunlar[3].replace(/^"|"$/g, '');
+                        var yukTipi = sutunlar[4].replace(/^"|"$/g, '');
+                        var ucretTur = sutunlar[5].replace(/^"|"$/g, '');
+                        var ucret = parseFloat(sutunlar[6].replace(/^"|"$/g, '')) || 0;
+
+                        yeniAraclar.push({
+                            tarih: tarih,
+                            plaka: plaka,
+                            aracTipi: aracTipi,
+                            yon: yon,
+                            yukTipi: yukTipi,
+                            ucretTur: ucretTur,
+                            ucret: ucret
+                        });
+
+                        plakaHavuzunaEkle(plaka);
+                    }
+                }
+
+                if (yeniAraclar.length > 0) {
+                    araclar = yeniAraclar;
+                    hafizayaKaydet();
+                    siraNoGuncelle();
+                    tutanakCiz();
+                    alert(yeniAraclar.length + " adet kayıt başarıyla yüklendi.");
+                } else {
+                    alert("Geçerli kayıt bulunamadı!");
+                }
+            } catch (err) {
+                console.error("CSV yükleme hatası:", err);
+                alert("Dosya okunurken bir hata oluştu.");
+            }
+        };
+        reader.readAsText(file, 'UTF-8');
+    }
+
+    function siraNoGuncelle() {
+        var el = document.getElementById('inpSiraNo');
+        if(el) { el.value = araclar.length + 1; }
+    }
+
+    function ucretDegisti(deger) {
+        if (deger !== "" && !isNaN(deger)) {
+            sonGirilenUcret = deger;
+            localStorage.setItem('tutanak_son_ucret', deger);
+        }
+    }
+
+    function ucretTuruDegisti() {
+        var turEl = document.getElementById('inpUcretTur');
+        var inputTutar = document.getElementById('inpUcretTutar');
+        if(!turEl || !inputTutar) return;
+        
+        var tur = turEl.value;
+        if (tur === "Ücretsiz") { 
+            inputTutar.value = 0; 
+            inputTutar.disabled = true; 
+        } else { 
+            inputTutar.disabled = false; 
+            inputTutar.value = sonGirilenUcret; 
+        }
+    }
+
+    function yukTipiDegisti() {
+        var secilenEl = document.getElementById('inpYukTipi');
+        var ozelAlan = document.getElementById('grpOzelYuk');
+        if(!secilenEl || !ozelAlan) return;
+
+        var secilen = secilenEl.value;
+        if (secilen === "Belirtiniz") {
+            ozelAlan.style.display = "flex";
+        } else {
+            ozelAlan.style.display = "none";
+            var ozelYukEl = document.getElementById('inpOzelYuk');
+            if(ozelYukEl) ozelYukEl.value = "";
+        }
+    }
+
+    function tarihFormatla(tarihMetni) {
+        if(!tarihMetni) return "";
+        if(tarihMetni.indexOf('.') !== -1) return tarihMetni;
+        var parcalar = tarihMetni.split('-');
+        if(parcalar.length < 3) return tarihMetni;
+        return parcalar[2] + '.' + parcalar[1] + '.' + parcalar[0];
+    }
+
+    function hafizayaKaydet() {
+        localStorage.setItem('tutanak_araclar', JSON.stringify(araclar));
+    }
+
+    function aracEkle() {
+        var t = dilSozlugu[aktifDil] || dilSozlugu['en'];
+        var secilenTarih = document.getElementById('inpTarih') ? document.getElementById('inpTarih').value : "";
+        var inpPlaka = document.getElementById('inpPlaka');
+        var inputTutarEl = document.getElementById('inpUcretTutar');
+        var ucretTurEl = document.getElementById('inpUcretTur');
+        if(!inpPlaka || !inputTutarEl) return;
+        
+        var plaka = inpPlaka.value.trim().toUpperCase();
+        var ucretTuru = ucretTurEl ? ucretTurEl.value : "Nakit";
+        var ucretMiktarVal = inputTutarEl.value;
+
+        if (!plaka) {
+            plaka = "GİRİLMEDİ";
+        } else {
+            plakaHavuzunaEkle(plaka);
+        }
+
+        var aracTipi = document.getElementById('inpAracTipi') ? document.getElementById('inpAracTipi').value : "Tır";
+        var yon = document.getElementById('inpYon') ? document.getElementById('inpYon').value : "Çıkış";
+        
+        var ucretMiktar = parseFloat(ucretMiktarVal);
+        
+        if (ucretMiktarVal === "" || isNaN(ucretMiktar) || ucretMiktar === 0) {
+            ucretMiktar = 0;
+            ucretTuru = "Ücretsiz";
+        }
+
+        if (ucretTuru !== "Ücretsiz" && ucretMiktarVal !== "") {
+            sonGirilenUcret = ucretMiktar;
+            localStorage.setItem('tutanak_son_ucret', ucretMiktar);
+        }
+
+        var secilenYukTipi = document.getElementById('inpYukTipi') ? document.getElementById('inpYukTipi').value : "Normal Yük";
+        var nihaiYukTipi = secilenYukTipi;
+        if(secilenYukTipi === "Çift Yükleme") {
+            nihaiYukTipi = "Çift Yükleme";
+        } else if(secilenYukTipi === "Belirtiniz") {
+            var ozelYukEl = document.getElementById('inpOzelYuk');
+            var ozelMetin = ozelYukEl ? ozelYukEl.value.trim() : "";
+            nihaiYukTipi = ozelMetin ? ozelMetin : "Özel Yük";
+        }
+
+        araclar.push({
+            tarih: tarihFormatla(secilenTarih),
+            plaka: plaka,
+            aracTipi: aracTipi,
+            yon: yon,
+            yukTipi: nihaiYukTipi,
+            ucretTur: ucretTuru,
+            ucret: ucretMiktar
+        });
+
+        hafizayaKaydet();
+        
+        inpPlaka.value = "";
+        plakaHavuzunuGuncelleUI("");
+        
+        if (ucretTurEl && ucretTurEl.value !== "Ücretsiz") {
+            inputTutarEl.value = sonGirilenUcret;
+        }
+        
+        var aracTipiEl = document.getElementById('inpAracTipi');
+        if(aracTipiEl) aracTipiEl.value = "Tır";
+
+        var yonEl = document.getElementById('inpYon');
+        if(yonEl) yonEl.value = "Çıkış";
+
+        var yukTipiEl = document.getElementById('inpYukTipi');
+        if(yukTipiEl) yukTipiEl.value = "Normal Yük";
+        yukTipiDegisti();
+
+        if(ucretTurEl) {
+            ucretTurEl.value = "Nakit";
+        }
+        if (inputTutarEl && ucretTurEl.value !== "Ücretsiz") {
+            inputTutarEl.disabled = false;
+        }
+
+        siraNoGuncelle();
+        setTimeout(function() { inpPlaka.focus(); }, 50);
+        tutanakCiz();
+    }
+
+    function aracSil(index) {
+        araclar.splice(index, 1);
+        hafizayaKaydet();
+        siraNoGuncelle();
+        tutanakCiz();
+    }
+
+    function sonIslemiGeriAl() {
+        if (araclar.length === 0) {
+            return;
+        }
+        araclar.pop();
+        hafizayaKaydet();
+        siraNoGuncelle();
+        tutanakCiz();
+    }
+
+    function listeyiKompleTemizle() {
+        araclar = [];
+        localStorage.removeItem('tutanak_araclar');
+        siraNoGuncelle();
+        tutanakCiz();
+    }
+
+    function sayfaFooterHTML() {
+        var t = dilSozlugu[aktifDil] || dilSozlugu['en'];
+        return '<div class="sayfa-footer">' + t.imzaText + '</div>';
+    }
+
+    function tutanakCiz() {
+        var anaAlan = document.getElementById('tutanakGenelAlan');
+        if(!anaAlan) return;
+        anaAlan.innerHTML = "";
+        var t = dilSozlugu[aktifDil] || dilSozlugu['en'];
+
+        if (araclar.length === 0) {
+            anaAlan.innerHTML = `<div class="empty-state">${t.emptyState}</div>`;
+            return;
+        }
+
+        var secilenTarihMeti = document.getElementById('inpTarih') ? document.getElementById('inpTarih').value : "";
+        var guncelTarihFormatli = tarihFormatla(secilenTarihMeti);
+        var personel = (document.getElementById('inpPersonel') && document.getElementById('inpPersonel').value) ? document.getElementById('inpPersonel').value : t.belirtilmedi;
+        var vardiya = (document.getElementById('inpVardiya') && document.getElementById('inpVardiya').value) ? document.getElementById('inpVardiya').value : t.belirtilmedi;
+        var aramaMetni = (document.getElementById('inpSearch') && document.getElementById('inpSearch').value) ? document.getElementById('inpSearch').value.trim().toUpperCase() : "";
+
+        var tumKlonlar = araclar.map(function(arac, index) {
+            var obj = Object.assign({}, arac);
+            if (obj.plaka === "GİRİLMEDİ") {
+                obj.plakaGosterim = t.girilmedi;
+            } else {
+                obj.plakaGosterim = obj.plaka;
+            }
+            obj.orijinalIndex = index;
+            return obj;
+        });
+
+        if (aramaMetni) {
+            tumKlonlar = tumKlonlar.filter(function(a) { return a.plaka.indexOf(aramaMetni) !== -1; });
+        }
+
+        if (tumKlonlar.length === 0 && aramaMetni) {
+            anaAlan.innerHTML = `<div class="empty-state">${t.searchNotFound}</div>`;
+            return;
+        }
+
+        var girisListesi = tumKlonlar.filter(function(a) { return a.yon === t.giris || a.yon === "Giriş"; });
+        var cikisListesi = tumKlonlar.filter(function(a) { return a.yon === t.cikis || a.yon === "Çıkış"; });
+
+        girisListesi.sort(function(a, b) { return a.plaka.localeCompare(b.plaka, 'tr', { numeric: true }); });
+        cikisListesi.sort(function(a, b) { return a.plaka.localeCompare(b.plaka, 'tr', { numeric: true }); });
+
+        var nakitAracSayi = araclar.filter(function(a) { return a.ucretTur === "Nakit"; }).length;
+        var nakitUcret = araclar.filter(function(a) { return a.ucretTur === "Nakit"; }).reduce(function(sum, a) { return sum + (parseFloat(a.ucret) || 0); }, 0);
+        
+        var krediAracSayi = araclar.filter(function(a) { return a.ucretTur === "Kredi Kartı"; }).length;
+        var krediUcret = araclar.filter(function(a) { return a.ucretTur === "Kredi Kartı"; }).reduce(function(sum, a) { return sum + (parseFloat(a.ucret) || 0); }, 0);
+        
+        var ucretsizAracSayi = araclar.filter(function(a) { return a.ucretTur === "Ücretsiz"; }).length;
+        var girisAracSayi = girisListesi.length;
+        var cikisAracSayi = cikisListesi.length;
+
+        var toplamAracSayisi = araclar.length;
+        var toplamUcretTutari = araclar.reduce(function(sum, a) { return sum + (parseFloat(a.ucret) || 0); }, 0);
+
+        var cokluYukAraclar = araclar.filter(function(a) { return a.yukTipi !== "Normal Yük" && a.yukTipi !== t.normalYuk; });
+        var cokluYukSayisi = cokluYukAraclar.length;
+        var cokluYukPlakalarMeti = t.kayitYok;
+        
+        if (cokluYukSayisi > 0) {
+            cokluYukPlakalarMeti = cokluYukAraclar.map(function(a) { 
+                var pText = (a.plaka === "GİRİLMEDİ") ? t.girilmedi : a.plaka;
+                var yText = (a.yukTipi === "Çift Yükleme" || a.yukTipi === "Double Load") ? t.ciftYuklemeMetin : a.yukTipi;
+                return pText + " (" + yText + ")"; 
+            }).join(", ");
+        }
+
+        var kapakSayfasi = document.createElement('div');
+        kapakSayfasi.className = "tutanak-sayfa";
+        kapakSayfasi.innerHTML = '<div class="temiz-tarih">' + guncelTarihFormatli + '</div>' +
+            '<div class="tutanak-baslik" style="font-size:16px; margin-top: 20px; margin-bottom: 25px;">' + t.reportTitle + '</div>' +
+            
+            '<table class="summary-table">' +
+            '<tr><td class="label-col">' + t.totalArac + '</td><td colspan="3" class="val-col">' + toplamAracSayisi + ' ' + t.adet + '</td></tr>' +
+            '<tr><td class="label-col">' + t.totalUcret + '</td><td colspan="3" class="val-col">' + toplamUcretTutari + ' ' + aktifParaBirimi + '</td></tr>' +
+            '<tr><td class="label-col">' + t.nakitArac + '</td><td colspan="3" class="val-col">' + nakitAracSayi + ' ' + t.adet + '</td></tr>' +
+            '<tr><td class="label-col">' + t.nakitUcret + '</td><td colspan="3" class="val-col">' + nakitUcret + ' ' + aktifParaBirimi + '</td></tr>' +
+            '<tr><td class="label-col">' + t.krediArac + '</td><td colspan="3" class="val-col">' + krediAracSayi + ' ' + t.adet + '</td></tr>' +
+            '<tr><td class="label-col">' + t.krediTutar + '</td><td colspan="3" class="val-col">' + krediUcret + ' ' + aktifParaBirimi + '</td></tr>' +
+            '<tr><td class="label-col">' + t.ucretsizArac + '</td><td colspan="3" class="val-col">' + ucretsizAracSayi + ' ' + t.adet + '</td></tr>' +
+            '<tr><td class="label-col">' + t.girisArac + '</td><td colspan="3" class="val-col">' + girisAracSayi + ' ' + t.adet + '</td></tr>' +
+            '<tr><td class="label-col">' + t.cikisArac + '</td><td colspan="3" class="val-col">' + cikisAracSayi + ' ' + t.adet + '</td></tr>' +
+            '<tr><td class="label-col">' + t.cokluYukArac + '</td><td colspan="3" class="val-col">' + cokluYukSayisi + ' ' + t.adet + '</td></tr>' +
+            '<tr><td class="label-col">' + t.cokluYukPlaka + '</td><td colspan="3" class="val-col">' + cokluYukPlakalarMeti + '</td></tr>' +
+            '</table>' +
+
+            '<div class="imza-alani">' +
+            '<div class="imza-kutu">' + t.teslimEden + '<br><span style="font-weight: normal; font-size: 13px;">' + t.personel + ' ' + personel + '<br>' + t.vardiyaLabel + ' ' + vardiya + '</span></div>' +
+            '<div class="imza-kutu">' + t.teslimAlan + '<br><span style="font-weight: normal; font-size: 13px;">&nbsp;<br>&nbsp;</span></div>' +
+            '</div>' +
+            sayfaFooterHTML();
+
+        anaAlan.appendChild(kapakSayfasi);
+
+        // Giriş ve Çıkış Detay Sayfaları Mantığı
+        var sayfaBasiSatir = 14;
+        
+        function listeSayfalariniOlustur(liste, baslikMetni) {
+            if (liste.length === 0) return;
+            
+            var toplamSayfa = Math.ceil(liste.length / sayfaBasiSatir);
+            
+            for (var s = 0; s < toplamSayfa; s++) {
+                var baslangicIdx = s * sayfaBasiSatir;
+                var bitisIdx = Math.min(baslangicIdx + sayfaBasiSatir, liste.length);
+                var sayfaVerileri = liste.slice(baslangicIdx, bitisIdx);
+                
+                var sayfaDiv = document.createElement('div');
+                sayfaDiv.className = "tutanak-sayfa";
+                
+                var tabloHTML = '<div class="temiz-tarih">' + guncelTarihFormatli + '</div>' +
+                    '<div class="tutanak-baslik">' + baslikMetni + ' (' + (s + 1) + '/' + toplamSayfa + ')</div>' +
+                    '<table class="list-table">' +
+                    '<thead><tr>' +
+                    '<th style="width: 35px;">' + t.sNo + '</th>' +
+                    '<th>' + t.tarih + '</th>' +
+                    '<th>' + t.plaka + '</th>' +
+                    '<th>' + t.aracTipi + '</th>' +
+                    '<th>' + t.yukTipi + '</th>' +
+                    '<th>' + t.ucretTur + '</th>' +
+                    '<th>' + t.tutarGir.replace(':', '') + '</th>' +
+                    '<th class="col-action" style="width: 45px;">' + t.sil + '</th>' +
+                    '</tr></thead><tbody>';
+                
+                var sayfaToplamTutar = 0;
+
+                sayfaVerileri.forEach(function(item, idx) {
+                    var gercekSira = baslangicIdx + idx + 1;
+                    sayfaToplamTutar += (parseFloat(item.ucret) || 0);
+
+                    var gosterimAracTipi = item.aracTipi;
+                    if (item.aracTipi === "Tır") gosterimAracTipi = t.tir;
+                    else if (item.aracTipi === "Kırkayak") gosterimAracTipi = t.kirkayak;
+                    else if (item.aracTipi === "On teker") gosterimAracTipi = t.onteker;
+                    else if (item.aracTipi === "Diğer") gosterimAracTipi = t.diger;
+
+                    var gosterimUcretTur = item.ucretTur;
+                    if (item.ucretTur === "Nakit") gosterimUcretTur = t.nakit;
+                    else if (item.ucretTur === "Kredi Kartı") gosterimUcretTur = t.krediKarti;
+                    else if (item.ucretTur === "Ücretsiz") gosterimUcretTur = t.ucretsiz;
+
+                    var gosterimYukTipi = item.yukTipi;
+                    if (item.yukTipi === "Normal Yük") gosterimYukTipi = t.normalYuk;
+                    else if (item.yukTipi === "Çift Yükleme") gosterimYukTipi = t.ciftYuklemeMetin;
+
+                    tabloHTML += '<tr>' +
+                        '<td>' + gercekSira + '</td>' +
+                        '<td>' + item.tarih + '</td>' +
+                        '<td style="font-weight:bold;">' + item.plakaGosterim + '</td>' +
+                        '<td>' + gosterimAracTipi + '</td>' +
+                        '<td>' + gosterimYukTipi + '</td>' +
+                        '<td>' + gosterimUcretTur + '</td>' +
+                        '<td>' + item.ucret + ' ' + aktifParaBirimi + '</td>' +
+                        '<td class="cell-action"><button class="btn-delete" onclick="aracSil(' + item.orijinalIndex + ')">' + t.sil + '</button></td>' +
+                        '</tr>';
+                });
+
+                tabloHTML += '<tr class="table-total-row"><td colspan="6" style="text-align: right;">' + t.pageTotal + '</td><td colspan="2" style="text-align: left; padding-left: 10px;">' + sayfaToplamTutar + ' ' + aktifParaBirimi + '</td></tr>';
+                tabloHTML += '</tbody></table>' + sayfaFooterHTML();
+                
+                sayfaDiv.innerHTML = tabloHTML;
+                anaAlan.appendChild(sayfaDiv);
+            }
+        }
+
+        listeSayfalariniOlustur(girisListesi, t.girisDetay);
+        listeSayfalariniOlustur(cikisListesi, t.cikisDetay);
+    }
+</script>
+</body>
+</html>
